@@ -1,13 +1,26 @@
-from huggingface_hub import InferenceClient
-import streamlit as st
+from huggingface_hub import InferenceClient 
 
-# --- Read THAWZIN'S API Key from File ---
-try:
-    with open('API_KEYS.txt', 'r') as f:
-        HUGGINGFACE_API_KEY = f.read().strip()
-except FileNotFoundError:
-    st.error("Error: 'API_KEYS.txt' not found.")
-    st.stop() # Stops the app from running further
+import streamlit as st 
+
+import os 
+
+from dotenv import load_dotenv 
+
+load_dotenv() 
+
+
+
+# --- Load API Key from Environment Variable --- 
+
+try: 
+
+    HUGGINGFACE_API_KEY = os.environ["HUGGINGFACE_API_KEY"] 
+
+except KeyError: 
+
+    st.error("Error: HUGGINGFACE_API_KEY environment variable not found.") 
+
+    st.stop()  # Stops the app from running further
 
 # --- Author : THAW ZIN ---
 # --- To pass the prompt to Hugging Face API and get the response ---
