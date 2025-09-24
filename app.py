@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 import plotly.express as px
+import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from calculations import *
 from apihandler import *
@@ -125,7 +126,34 @@ elif dashboard_selection == "Max Profit Calculation":
 elif dashboard_selection == "Trends Analysis":
     st.markdown("---")
     st.header("Trends Analysis Dashboard")
-    st.info("The Trends Analysis dashboard is not yet implemented.")
+
+    user_ticker = st.text_input("Enter a Ticker Symbol: (e.g. AAPL, GOOG ...)").upper()
+
+    if user_ticker:
+        # Getting 3 years of data from yfinance using 
+        # user given ticker
+        ticker = yf.Ticker(user_ticker)
+        data = ticker.history(period="3Y")
+
+        bollingerBands = st.checkbox(label="Bollinger Bands", value=False)
+        volume = st.checkbox(label="Volume", value=False)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(data['Close'], label="Price", color='blue')
+
+        if bollingerBands == True:
+            bands = bollinger_bands(data=data, window=5, k=2)
+
+            plt.plot(bands['SMA'], label="SMA", color='orange')
+            plt.plot(bands['UpperBand'], label="Upper Band", color='green', linestyle='-')
+            plt.fill_between(data.index, bands['UpperBand'], bands['LowerBand'], color='grey', alpha=0.4)
+            plt.plot(bands['LowerBand'], label="Lower Band", color='red', linestyle='-')
+
+        # Plotting closing price
+        plt.title(f"Closing price of {user_ticker}")
+        plt.legend()
+        st.pyplot(plt)
     
+        
 #------------------------------------END OF YUAN WEI PART-----------------------------------
 
