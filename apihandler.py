@@ -1,19 +1,26 @@
-from huggingface_hub import InferenceClient
-import streamlit as st
+from huggingface_hub import InferenceClient 
 
-import os
-from dotenv import load_dotenv
+import streamlit as st 
 
-# This line loads the environment variables from the .env file
+import os 
+
+from dotenv import load_dotenv 
+
 load_dotenv() 
 
-# Now you can safely access the variable
-try:
-    HUGGINGFACE_API_KEY = os.environ["HUGGINGFACE_API_KEY"]
-except KeyError:
-    # This error will only show if the variable isn't in .env or isn't set
-    st.error("Error: HUGGINGFACE_API_KEY environment variable not found.")
-    st.stop()
+
+
+# --- Load API Key from Environment Variable --- 
+
+try: 
+
+    HUGGINGFACE_API_KEY = os.environ["HUGGINGFACE_API_KEY"] 
+
+except KeyError: 
+
+    st.error("Error: HUGGINGFACE_API_KEY environment variable not found.") 
+
+    st.stop()  # Stops the app from running further
 
 # --- Author : THAW ZIN ---
 # --- To pass the prompt to Hugging Face API and get the response ---
