@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 # -------------------------------------------------------------------------
 # TO DO: Add more financial calculations as needed
@@ -48,9 +49,35 @@ def calculate_rsi(data, window=14):
 
 
 #------------------------------------START OF YUAN WEI PART----------------------------------
-# def analyze_trends(data):
-#     """Example placeholder for trend analysis calculation"""
-#     pass
+def bollinger_bands(data, window=5, k=2):
+    '''
+    Calculates Bollinger Bands for given price data/
+
+    '''
+    prices = np.asarray(data['Close'])
+    n = len(prices)
+
+    # Creating empty array to hold results
+    sma = np.full(n, np.nan)
+    upper_band = np.full(n, np.nan)
+    lower_band = np.full(n, np.nan)
+
+    # Sliding window calculation
+    for i in range(window - 1, n):
+        window_data = prices[i - window + 1 : i + 1] # Getting first 20 elements
+        mean = np.mean(window_data)
+        std = np.std(window_data)
+
+        sma[i] = mean
+        upper_band[i] = mean + k * std
+        lower_band[i] = mean - k * std
+
+    return pd.DataFrame({
+        'SMA': sma,
+        'UpperBand': upper_band,
+        'LowerBand': lower_band
+    }, index=data.index)
+
 #------------------------------------END OF YUAN WEI PART------------------------------------
 
 
