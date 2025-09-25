@@ -3,6 +3,8 @@ import pandas as pd
 import yfinance as yf
 import plotly.express as px
 import matplotlib.pyplot as plt
+import mpld3
+import streamlit.components.v1 as components
 from datetime import datetime, timedelta
 from calculations import *
 from apihandler import *
@@ -135,25 +137,31 @@ elif dashboard_selection == "Trends Analysis":
         ticker = yf.Ticker(user_ticker)
         data = ticker.history(period="3Y")
 
-        bollingerBands = st.checkbox(label="Bollinger Bands", value=False)
-        volume = st.checkbox(label="Volume", value=False)
+        indicators_plot = {
+            "Bollinger Bands": plot_bollinger_bands,
+            "Trends": plot_trends
+        }
+
+        selected_options = st.multiselect(
+            "Select indicators to display:",
+            ["Bollinger Bands", "Trends"]
+        )
 
         plt.figure(figsize=(10, 6))
         plt.plot(data['Close'], label="Price", color='blue')
 
-        if bollingerBands == True:
-            bands = bollinger_bands(data=data, window=5, k=2)
+        for option in selected_options:
+            if option in indicators_plot:
+                indicators_plot[option](data)
 
-            plt.plot(bands['SMA'], label="SMA", color='orange')
-            plt.plot(bands['UpperBand'], label="Upper Band", color='green', linestyle='-')
-            plt.fill_between(data.index, bands['UpperBand'], bands['LowerBand'], color='grey', alpha=0.4)
-            plt.plot(bands['LowerBand'], label="Lower Band", color='red', linestyle='-')
 
         # Plotting closing price
         plt.title(f"Closing price of {user_ticker}")
         plt.legend()
-        st.pyplot(plt)
-    
-        
+        fig = plt.gcf()       
+
+        # Turning static plot to interactive
+        fig_html = mpld3.fig_to_html(fig)
+        components.html(fig_html, height=1000)
 #------------------------------------END OF YUAN WEI PART-----------------------------------
 

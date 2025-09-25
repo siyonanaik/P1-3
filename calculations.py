@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 # -------------------------------------------------------------------------
 # TO DO: Add more financial calculations as needed
@@ -78,6 +79,19 @@ def bollinger_bands(data, window=5, k=2):
         'LowerBand': lower_band
     }, index=data.index)
 
+def plot_bollinger_bands(data):
+    bands = bollinger_bands(data=data, window=5, k=2)
+
+    plt.plot(bands['SMA'], label="SMA", color='orange')
+    plt.plot(bands['UpperBand'], label="Upper Band", color='green', linestyle='-')
+    plt.fill_between(data.index, bands['UpperBand'], bands['LowerBand'], color='grey', alpha=0.4)
+    plt.plot(bands['LowerBand'], label="Lower Band", color='red', linestyle='-')
+
+def plot_trends(data):
+    for i in range(1, len(data)):
+        color = "green" if data["Close"].iloc[i] > data["Close"].iloc[i-1] else \
+                "red" if data["Close"].iloc[i] < data["Close"].iloc[i-1] else "grey"
+        plt.plot(data.index[i-1:i+1], data["Close"].iloc[i-1:i+1], color=color, linewidth=1.8)
 #------------------------------------END OF YUAN WEI PART------------------------------------
 
 
