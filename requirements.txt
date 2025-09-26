@@ -4,6 +4,5 @@ yfinance
 plotly
 numpy
 huggingface_hub
-os
 python-dotenv
 matplotlib
