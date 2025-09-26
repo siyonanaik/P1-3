@@ -4,6 +4,6 @@ yfinance
 plotly
 numpy
 huggingface_hub
-os
 python-dotenv
-matplotlib
+matplotlib==3.10.6
+mpld3==0.5.11
