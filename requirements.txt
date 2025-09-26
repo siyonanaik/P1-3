@@ -4,10 +4,6 @@ yfinance
 plotly
 numpy
 huggingface_hub
-<<<<<<< HEAD
-python-dotenv
-matplotlib==3.10.6
-mpld3==0.5.11
-=======
+os
 python-dotenv
 >>>>>>> 8a35a7d (adding max profit)
