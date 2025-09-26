@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 import plotly.express as px
+import matplotlib.pyplot as plt
+import mpld3
+import streamlit.components.v1 as components
 from datetime import datetime, timedelta
 from calculations import *
 from apihandler import *
@@ -287,7 +290,54 @@ elif dashboard_selection == "Max Profit Calculation":
 elif dashboard_selection == "Trends Analysis":
     st.markdown("---")
     st.header("Trends Analysis Dashboard")
-    st.info("The Trends Analysis dashboard is not yet implemented.")
-    
+
+    user_ticker = st.text_input("Enter a Ticker Symbol: (e.g. AAPL, GOOG ...)").upper()
+
+    def plot_bollinger_bands(data):
+        bands = bollinger_bands(data=data, window=5, k=2)
+
+        plt.plot(bands['SMA'], label="SMA", color='orange')
+        plt.plot(bands['UpperBand'], label="Upper Band", color='green', linestyle='-')
+        plt.fill_between(data.index, bands['UpperBand'], bands['LowerBand'], color='grey', alpha=0.4)
+        plt.plot(bands['LowerBand'], label="Lower Band", color='red', linestyle='-')
+
+    def plot_trends(data):
+        for i in range(1, len(data)):
+            color = "green" if data["Close"].iloc[i] > data["Close"].iloc[i-1] else \
+                    "red" if data["Close"].iloc[i] < data["Close"].iloc[i-1] else "grey"
+            plt.plot(data.index[i-1:i+1], data["Close"].iloc[i-1:i+1], color=color, linewidth=1.8)
+
+    if user_ticker:
+        # Getting 3 years of data from yfinance using 
+        # user given ticker
+        ticker = yf.Ticker(user_ticker)
+        data = ticker.history(period="3Y")
+
+        indicators_plot = {
+            "Bollinger Bands": plot_bollinger_bands,
+            "Trends": plot_trends
+        }
+
+        selected_options = st.multiselect(
+            "Select indicators to display:",
+            ["Bollinger Bands", "Trends"]
+        )
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(data['Close'], label="Price", color='blue')
+
+        for option in selected_options:
+            if option in indicators_plot:
+                indicators_plot[option](data)
+
+
+        # Plotting closing price
+        plt.title(f"Closing price of {user_ticker}")
+        plt.legend()
+        fig = plt.gcf()       
+
+        # Turning static plot to interactive
+        fig_html = mpld3.fig_to_html(fig)
+        components.html(fig_html, height=1000)
 #------------------------------------END OF YUAN WEI PART-----------------------------------
 
