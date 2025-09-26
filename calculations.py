@@ -151,7 +151,7 @@ for _, row in top5_df.iterrows():
     plt.annotate(f"{row['Profit']:.2f}",
                  (row['Buy Date'], row['Profit']),
                  textcoords="offset points", xytext=(0,10), ha='center',
-                 fontsize=9, color="black")
+                 fontsize=9, color="blue")
 
 # Labels and formatting
 plt.xlabel("Buy Date")
