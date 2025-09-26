@@ -253,7 +253,32 @@ elif dashboard_selection == "Daily Returns":
 elif dashboard_selection == "Max Profit Calculation":
     st.markdown("---")
     st.header("Max Profit Calculation Dashboard")
-    st.info("The Max Profit Calculation dashboard is not yet implemented.")
+    # Plot profits
+    maxprofitfig = plt.figure(figsize=(12,6))
+    plt.plot(transactions_df["Buy Date"], transactions_df["Profit"],
+            linestyle='-', color='lightpink', label="Total Profits")
+
+    # Highlight top 5 profits
+    plt.scatter(top5_df["Buy Date"], top5_df["Profit"], 
+                color="lightblue", s=100, label="Top 5 Profits")
+
+    # Writting top 5
+    for _, row in top5_df.iterrows():
+        plt.annotate(f"{row['Profit']:.2f}",
+                    (row['Buy Date'], row['Profit']),
+                    textcoords="offset points", xytext=(0,10), ha='center',
+                    fontsize=9, color="black")
+
+    # Labels and formatting
+    plt.xlabel("Buy Date")
+    plt.ylabel("Profit")
+    plt.title("Profit per Transaction")
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+    st.pyplot(maxprofitfig)
     
 #------------------------------------END OF WYNN PART---------------------------------------
 
