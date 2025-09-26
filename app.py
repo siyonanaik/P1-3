@@ -8,6 +8,7 @@ import streamlit.components.v1 as components
 from datetime import datetime, timedelta
 from calculations import *
 from apihandler import *
+import csv
 
 # Set up the page configuration
 st.set_page_config(
@@ -99,9 +100,145 @@ if dashboard_selection == "Stock Price and RSI":
 #------------------------------------START OF SIYONA PART------------------------------------
 
 elif dashboard_selection == "SMA & EMA":
-    st.markdown("---")
-    st.header("SMA & EMA Dashboard")
-    st.info("The SMA & EMA dashboard is not yet implemented.")
+    st.markdown("---") 
+    st.header("Simple Moving Average (SMA) & Exponential Moving Average (EMA)")
+    st.subheader("NVIDIA Stock Price with SMA (Periods: 50, 100, 200)")
+
+    # ---- Load dataset manually ----
+    file_path = 'nvidia_cleaned.csv'
+    dates = []
+    close_prices = []
+
+    with open(file_path, 'r') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            dates.append(row['Date'])
+            close_prices.append(float(row['Close']))
+
+    # ---- Calculate SMAs using imported function ----
+    sma_50 = simple_moving_average(close_prices, 50)
+    sma_100 = simple_moving_average(close_prices, 100)
+    sma_200 = simple_moving_average(close_prices, 200)
+
+    # ---- Save CSV ----
+    output_path = 'nvidia_sma_manual.csv'
+    with open(output_path, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Date', 'Close', 'SMA_50', 'SMA_100', 'SMA_200'])
+        for i in range(len(dates)):
+            writer.writerow([dates[i], close_prices[i], sma_50[i], sma_100[i], sma_200[i]])
+
+
+    # ---- Create DataFrame ----
+    data = pd.DataFrame({
+        'Date': pd.to_datetime(dates),
+        'Close': close_prices,
+        'SMA_50': sma_50,
+        'SMA_100': sma_100,
+        'SMA_200': sma_200
+    })
+
+    # ---- Melt for Plotly ----
+    df_long = data.melt(
+        id_vars=['Date'],
+        value_vars=['Close', 'SMA_50', 'SMA_100', 'SMA_200'],
+        var_name='Series',
+        value_name='Price'
+    )
+
+    # ---- Plotly Express ----
+    fig = px.line(
+        df_long,
+        x='Date',
+        y='Price',
+        color='Series',
+        # title="NVIDIA Stock Price with SMA (50, 100, 200)"
+    )
+    fig.update_traces(line=dict(width=1))
+
+    # ---- X-axis: show start and end dates ----
+    tick_dates = pd.date_range(start=data['Date'].iloc[0],
+                            end=data['Date'].iloc[-1],
+                            periods=10)
+
+    fig.update_xaxes(
+        tickmode='array',
+        tickvals=tick_dates,
+        tickformat="%Y-%m-%d",
+        tickangle=45
+    )
+
+    # ---- Display in Streamlit ----
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.info("The Simple Moving Average (SMA) is a widely used technical indicator that calculates the average of a stock’s prices over a specific number of periods. By smoothing out daily price fluctuations, the SMA helps traders and analysts identify the overall trend of a stock, making it easier to distinguish short-term noise from meaningful movements. Commonly used SMA periods include 50-day, which reflects short-term trends, 100-day for medium-term trends, and 200-day for long-term trends, often serving as key levels of support or resistance in market analysis.")
+
+    # EMA Calculation 
+
+    st.subheader("NVIDIA Stock Price with EMA (Periods: 12, 26, 50, 200)")
+
+    # ---- Load dataset manually ----
+    file_path = 'nvidia_cleaned.csv'
+    dates = []
+    close_prices = []
+
+    with open(file_path, 'r') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            dates.append(row['Date'])
+            close_prices.append(float(row['Close']))
+
+    # ---- EMA periods ----
+    periods = [12, 26, 50, 200]
+
+    # ---- Calculate EMAs ----
+    ema_dict = {f"EMA_{p}": exponential_moving_average(close_prices, p) for p in periods}
+
+    # ---- Save CSV ----
+    output_path = 'nvidia_ema.csv'
+    with open(output_path, 'w', newline='') as file:
+        writer = csv.writer(file)
+        header = ['Date', 'Close'] + list(ema_dict.keys())
+        writer.writerow(header)
+        for i in range(len(dates)):
+            row = [dates[i], close_prices[i]] + [ema_dict[key][i] for key in ema_dict]
+            writer.writerow(row)
+
+
+    # ---- Create DataFrame ----
+    data = pd.DataFrame({'Date': pd.to_datetime(dates), 'Close': close_prices})
+    for key in ema_dict:
+        data[key] = ema_dict[key]
+
+    # ---- Melt for Plotly ----
+    df_long = data.melt(
+        id_vars=['Date'],
+        value_vars=['Close'] + list(ema_dict.keys()),
+        var_name='Series',
+        value_name='Price'
+    )
+
+    # ---- Plotly Express ----
+    color_map = {
+        'Close': 'orange',      # bright orange for close price
+        'EMA_12': 'cyan',      # bright cyan
+        'EMA_26': 'magenta',   # bright magenta
+        'EMA_50': 'lime',      # bright green
+        'EMA_200': 'yellow'    # bright yellow
+    }
+    fig = px.line(df_long, x='Date', y='Price', color='Series', color_discrete_map=color_map)
+    fig.update_traces(line=dict(width=1))
+
+    # ---- X-axis: show start and end dates ----
+    tick_dates = pd.date_range(start=data['Date'].iloc[0],
+                            end=data['Date'].iloc[-1],
+                            periods=10)
+    fig.update_xaxes(tickmode='array', tickvals=tick_dates, tickformat="%Y-%m-%d", tickangle=45)
+
+    # ---- Display in Streamlit ----
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.info("The Exponential Moving Average (EMA), on the other hand, places greater weight on recent prices, allowing it to respond more quickly to changes in market direction. This responsiveness makes the EMA particularly useful for detecting trends and reversals sooner than the SMA. Typical EMA periods include 12-day and 26-day for short-term trends, which are often used in combination to generate trading signals, as well as 50-day and 200-day EMAs that help identify intermediate and long-term market trends. By choosing the appropriate EMA periods, traders can effectively balance sensitivity to recent price movements with the overall trend of the market.")
 
 #------------------------------------END OF SIYONA PART------------------------------------
 
