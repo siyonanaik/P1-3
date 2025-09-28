@@ -3,6 +3,7 @@ import pandas as pd
 import yfinance as yf
 import plotly.express as px
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import mpld3
 import streamlit.components.v1 as components
 from datetime import datetime, timedelta
@@ -293,7 +294,7 @@ elif dashboard_selection == "Trends Analysis":
 
     user_ticker = st.text_input("Enter a Ticker Symbol: (e.g. AAPL, GOOG ...)").upper()
 
-    def plot_bollinger_bands(data):
+    def plot_bollinger_bands(data, ax):
         bands = bollinger_bands(data=data, window=5, k=2)
 
         plt.plot(bands['SMA'], label="SMA", color='orange')
@@ -301,11 +302,42 @@ elif dashboard_selection == "Trends Analysis":
         plt.fill_between(data.index, bands['UpperBand'], bands['LowerBand'], color='grey', alpha=0.4)
         plt.plot(bands['LowerBand'], label="Lower Band", color='red', linestyle='-')
 
-    def plot_trends(data):
+    def plot_trends(data, ax):
         for i in range(1, len(data)):
             color = "green" if data["Close"].iloc[i] > data["Close"].iloc[i-1] else \
                     "red" if data["Close"].iloc[i] < data["Close"].iloc[i-1] else "grey"
             plt.plot(data.index[i-1:i+1], data["Close"].iloc[i-1:i+1], color=color, linewidth=1.8)
+
+    def plot_candles(data, ax):
+        base = data.index[0].toordinal()
+
+        for idx, row in data.iterrows():
+
+            x = idx.toordinal() - base
+            # Candle color
+            color = "green" if row.Close >= row.Open else "red"
+
+            # Candle body
+            lower = min(row.Open, row.Close)
+            height = abs(row.Close - row.Open)
+            ax.add_patch(
+                patches.Rectangle(
+                    (x - 0.4, lower),
+                    0.8,
+                    height if height > 0 else 0.01,
+                    facecolor=color,
+                    edgecolor=color
+                )
+            )
+
+            # Candle Wick
+            ax.vlines(x, row.Low, row.High, color=color, linewidth=2)
+
+        ax.set_xlim(-1, len(data))
+        ax.set_xticks(range(0, len(data), max(1, len(data)//10)))
+        ax.set_xticklabels(data.index.strftime("%Y-%m-%d")[::max(1, len(data)//10)])
+        ax.autoscale_view()
+
 
     if user_ticker:
         # Getting 3 years of data from yfinance using 
@@ -313,31 +345,43 @@ elif dashboard_selection == "Trends Analysis":
         ticker = yf.Ticker(user_ticker)
         data = ticker.history(period="3Y")
 
+        # Cleaning data
+        # Reindexing to fill in weekends
+        data.index = pd.to_datetime(data.index)
+        full_index = pd.date_range(start=data.index.min(), end=data.index.max(), freq='D')
+        data = data.reindex(full_index)
+        # Forward filling missing data
+        data = data.ffill()
+
         indicators_plot = {
             "Bollinger Bands": plot_bollinger_bands,
-            "Trends": plot_trends
+            "Trends": plot_trends,
+            "Candles": plot_candles
         }
 
         selected_options = st.multiselect(
             "Select indicators to display:",
-            ["Bollinger Bands", "Trends"]
+            ["Bollinger Bands", "Trends", "Candles"]
         )
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(data['Close'], label="Price", color='blue')
+        #fig = plt.figure(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(14, 8))
+        if "Candles" not in selected_options:
+            ax.plot(data['Close'], label="Price", color='blue')
+
 
         for option in selected_options:
             if option in indicators_plot:
-                indicators_plot[option](data)
+                indicators_plot[option](data, ax)
 
-
+        
         # Plotting closing price
         plt.title(f"Closing price of {user_ticker}")
-        plt.legend()
-        fig = plt.gcf()       
+        plt.legend()     
 
         # Turning static plot to interactive
         fig_html = mpld3.fig_to_html(fig)
-        components.html(fig_html, height=1000)
+        components.html(fig_html, height=1000, width=1000)
+        
 #------------------------------------END OF YUAN WEI PART-----------------------------------
 
