@@ -31,7 +31,7 @@ def calculate_rsi(data, window=14):
 
 
 #------------------------------------START OF SIYONA PART------------------------------------
-# (Currently empty — Siyona can add functions here)
+
 
 def simple_moving_average(prices, period):
     """

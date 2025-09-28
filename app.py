@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from calculations import *
 from apihandler import *
 import csv
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 
 # Set up the page configuration
 st.set_page_config(
@@ -22,7 +24,7 @@ st.set_page_config(
 st.title("Financial Trend Analysis Dashboard")
 
 st.markdown("""
-Welcome to the P1-3's historical & live financial data analysis dashboard! This tool allows you
+Welcome to the P1-3's live & historical financial data analysis dashboard! This tool allows you
 to analyze stock tickers and get AI-powered insights.
 """)
 
@@ -36,19 +38,41 @@ dashboard_selection = st.sidebar.radio(
 # --- Display different dashboards based on selection For different Team Members---
 
 #------------------------------------START OF THAW ZIN PART-------------------------------
+
+
 if dashboard_selection == "Stock Price and RSI":
     st.markdown("---")
     st.header("Live Stock Ticker Analysis")
 
-    ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", "MSFT").upper()
+    ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
 
+    # --- NEW TIME RANGE SELECTION LOGIC ---
+    TIME_RANGES = {
+        "1D": timedelta(days=1),
+        "1W": timedelta(weeks=1),
+        "1M": timedelta(days=30),      # Approximation
+        "3M": timedelta(days=90),      # Approximation
+        "1Y": timedelta(days=365),
+        "3Y": timedelta(days=365 * 3), # Approximation
+    }
+
+    selected_range_label = st.radio(
+        "Select Time Range:",
+        options=list(TIME_RANGES.keys()),
+        index=4, # Default to 1Y
+        horizontal=True
+    )
+    
     if ticker_symbol:
         try:
-            # Fetch data for the last year
+            # Fetch data based on user selected range
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=365)
             
-            with st.spinner(f"Fetching data for {ticker_symbol}..."):
+            # Calculate start date based on selected label
+            range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
+            start_date = end_date - range_delta
+            
+            with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
                 stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
             
             if stock_data.empty:
@@ -58,18 +82,60 @@ if dashboard_selection == "Stock Price and RSI":
                 if isinstance(stock_data.columns, pd.MultiIndex):
                     stock_data.columns = stock_data.columns.get_level_values(0)
 
-                # --- Stock Price and RSI section ---
-                st.subheader(f"Historical Price for {ticker_symbol}")
-                fig_price = px.line(
-                    stock_data,
-                    x=stock_data.index,
-                    y='Close',
-                    title=f"Historical Price of {ticker_symbol}",
-                    labels={'Close': 'Price ($)'}
+                # --- Candlestick and Volume Subplot Section (Current Ticker) ---
+                st.subheader(f"Candlestick Price and Volume for {ticker_symbol}")
+                
+                # Create subplots: 2 rows, shared X-axis, Price (row 1) is taller than Volume (row 2)
+                fig_combined = make_subplots(
+                    rows=2, cols=1, 
+                    shared_xaxes=True, 
+                    vertical_spacing=0.05,
+                    row_heights=[0.7, 0.3]
                 )
-                st.plotly_chart(fig_price, use_container_width=True)
+                
+                # 1. Candlestick Chart (Row 1)
+                candlestick = go.Candlestick(
+                    x=stock_data.index,
+                    open=stock_data['Open'],
+                    high=stock_data['High'],
+                    low=stock_data['Low'],
+                    close=stock_data['Close'],
+                    name='Price'
+                )
+                fig_combined.add_trace(candlestick, row=1, col=1)
+                
+                # 2. Volume Bar Chart (Row 2)
+                # Determine bar color based on daily movement (Close > Open = Green; else Red)
+                volume_colors = ['green' if stock_data['Close'].iloc[i] > stock_data['Open'].iloc[i] else 'red'
+                                 for i in range(len(stock_data))]
 
-                # Calculate and plot RSI
+                volume_bar = go.Bar(
+                    x=stock_data.index,
+                    y=stock_data['Volume'],
+                    marker_color=volume_colors,
+                    name='Volume'
+                )
+                fig_combined.add_trace(volume_bar, row=2, col=1)
+
+                # Update layout for a cleaner financial look
+                fig_combined.update_layout(
+                    title_text=f"Historical Price and Volume Analysis for {ticker_symbol}",
+                    xaxis_rangeslider_visible=False, # Hide the main range slider
+                    xaxis2_title="Date",
+                    yaxis_title="Price ($)",
+                    yaxis2_title="Volume",
+                    height=700,
+                    template='plotly_white'
+                )
+                
+                # Finalize axis visibility and ranges
+                fig_combined.update_xaxes(showgrid=True, row=1, col=1)
+                fig_combined.update_yaxes(showgrid=True, row=1, col=1)
+                fig_combined.update_yaxes(showgrid=True, row=2, col=1)
+                
+                st.plotly_chart(fig_combined, use_container_width=True)
+
+                # --- RSI Calculation and Plot ---
                 stock_data['RSI'] = calculate_rsi(stock_data)
                 
                 st.subheader(f"Relative Strength Index (RSI) for {ticker_symbol}")
@@ -87,9 +153,64 @@ if dashboard_selection == "Stock Price and RSI":
                 # --- RSI explanation with API call ---
                 st.markdown("---")
                 st.write("### What is RSI?")
-                with st.spinner("Fetching RSI explanation from Hugging Face..."):
-                    rsi_explanation = call_huggingface_api("What is the Relative Strength Index (RSI)? Explain it simply for a beginner.")
+
+                with st.spinner("Fetching RSI explanation..."):
+                    try:
+                        rsi_explanation =  WAITcall_huggingface_api(
+                            "What is the Relative Strength Index (RSI)? Explain it simply for a beginner."
+                        )
+                    except Exception as e:
+                        # Fallback hardcoded explanation
+                        rsi_explanation = (
+                            "The Relative Strength Index (RSI) is a popular momentum indicator used "
+                            "in technical analysis. It measures the speed and size of recent price "
+                            "changes to identify whether a stock is overbought or oversold. "
+                            
+                            "RSI values range from 0 to 100: generally, above 70 means overbought, "
+                            "and below 30 means oversold."
+                        )
+
                 st.info(rsi_explanation)
+
+                # --- Specific NVIDIA Chart (Reads from File) ---
+                st.markdown("---")
+                st.subheader("Candlestick Chart from Sample NVIDIA Data (Read from Preprocessed Dataset)")
+                
+                try:
+                    # Load data directly from the external file
+                    nvidia_df = pd.read_csv('nvidia_cleaned.csv')
+                    
+                    # Convert 'Date' column to datetime objects
+                    nvidia_df['Date'] = pd.to_datetime(nvidia_df['Date'])
+
+                    # Create the Candlestick chart for the sample data
+                    fig_nvidia = go.Figure(data=[go.Candlestick(
+                        x=nvidia_df['Date'],
+                        open=nvidia_df['Open'],
+                        high=nvidia_df['High'],
+                        low=nvidia_df['Low'],
+                        close=nvidia_df['Close'],
+                        name='NVDA Price'
+                    )])
+
+                    # Customize the layout
+                    fig_nvidia.update_layout(
+                        title='NVIDIA Sample Data Candlestick (2022-09-12 to 2022-09-18)',
+                        xaxis_title='Date',
+                        yaxis_title='Price (USD)',
+                        xaxis_rangeslider_visible=True, 
+                        template='plotly_white',
+                        height=500,
+                        hovermode='x unified',
+                    )
+                    
+                    st.plotly_chart(fig_nvidia, use_container_width=True)
+
+                except FileNotFoundError:
+                    st.warning("⚠️ **File Not Found:** Skipping NVIDIA sample chart because 'nvidia_cleaned.csv' could not be loaded. Please ensure the file exists in the current directory.")
+                except Exception as e:
+                    st.error(f"Error loading NVIDIA sample data: {e}")
+
 
         except Exception as e:
             st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
