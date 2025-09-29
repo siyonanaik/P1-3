@@ -100,12 +100,12 @@ def calculate_daily_returns(close):
     - close: list of close values
     
     Returns:
-    - list of daily returns
+    - list of daily returns (%)
     """
     dailyreturn_lst = [0]
 
     for i in range(1, len(close)): 
-        dailyreturn_lst.append((close[i] - close[i-1]) / close[i-1])
+        dailyreturn_lst.append(((close[i] - close[i-1]) / close[i-1]) * 100)
 
     return dailyreturn_lst
 
@@ -143,7 +143,7 @@ def calculate_average_true_range(tr_lst):
     Returns:
     - list of average true range values
     """
-    time_period = 5
+    time_period = 7
     atr_lst = [tr_lst[0]]
     previous_atr = tr_lst[0]
 
