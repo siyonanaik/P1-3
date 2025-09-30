@@ -19,7 +19,7 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
 )
-
+ 
 # --- Dashboard UI (Frontend) ---
 
 st.title("Financial Trend Analysis Dashboard")
@@ -33,7 +33,7 @@ to analyze stock tickers and get AI-powered insights.
 st.sidebar.title("Dashboard Menu")
 dashboard_selection = st.sidebar.radio(
     "Select a dashboard view:",
-    ("Stock Price and RSI", "SMA & EMA", "Daily Returns", "Max Profit Calculation", "Trends Analysis")
+    ("Trends Analysis" , "Daily Returns", "SMA & EMA",  "Stock Price and RSI", "Max Profit Calculation")
 )
 
 # --- Display different dashboards based on selection For different Team Members---
