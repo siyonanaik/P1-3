@@ -100,12 +100,12 @@ def calculate_daily_returns(close):
     - close: list of close values
     
     Returns:
-    - list of daily returns
+    - list of daily returns (%)
     """
     dailyreturn_lst = [0]
 
     for i in range(1, len(close)): 
-        dailyreturn_lst.append((close[i] - close[i-1]) / close[i-1])
+        dailyreturn_lst.append(((close[i] - close[i-1]) / close[i-1]) * 100)
 
     return dailyreturn_lst
 
@@ -125,11 +125,11 @@ def calculate_true_range(high, low, close):
     tr_lst = [tr_day_1]
 
     for i in range(1, len(close)):
-        TR_1 = high[i] - low[i]
-        TR_2 = abs(high[i] - close[i-1])
-        TR_3 = abs(low[i] - close[i-1])
-        TR = max(TR_1, TR_2, TR_3)
-        tr_lst.append(TR)
+        tr_1 = high[i] - low[i]
+        tr_2 = abs(high[i] - close[i-1])
+        tr_3 = abs(low[i] - close[i-1])
+        tr = max(tr_1, tr_2, tr_3)
+        tr_lst.append(tr)
     
     return tr_lst
 
@@ -143,20 +143,20 @@ def calculate_average_true_range(tr_lst):
     Returns:
     - list of average true range values
     """
-    time_period = 5
+    time_period = 7
     atr_lst = [tr_lst[0]]
     previous_atr = tr_lst[0]
 
     for i in range(1, len(tr_lst)):
         if i < (time_period - 1):
             # For Days 1 to time_period, ATR is calculated as Day 1: day_1_tr / 1, Day 2: (day_1_tr + day_2_tr) / 2, Day 3: (day_1_tr + day_2_tr + day_3_tr) / 3 ...
-            ATR = ((previous_atr * i) + tr_lst[i]) / (i + 1)
+            atr = ((previous_atr * i) + tr_lst[i]) / (i + 1)
         else:  
             # Standard ATR formula after initial period
-            ATR = ((previous_atr * (time_period - 1)) + tr_lst[i]) / time_period
+            atr = ((previous_atr * (time_period - 1)) + tr_lst[i]) / time_period
 
-        atr_lst.append(ATR)      
-        previous_atr = ATR
+        atr_lst.append(atr)      
+        previous_atr = atr
     
     return atr_lst
 #------------------------------------END OF KAI REI PART-------------------------------------
