@@ -13,18 +13,50 @@ import matplotlib.pyplot as plt
 
 #------------------------------------START OF THAWZIN PART-----------------------------------
 
-def calculate_rsi(data, window=14):
+# Ensure this function replaces the one in your utility section
+def calculate_rsi(df: pd.DataFrame, periods: int = 14) -> pd.Series:
     """
-    Calculates the Relative Strength Index (RSI) for a given stock price data.
+    Calculates the Relative Strength Index (RSI) using J. Welles Wilder's method.
+    Uses numpy for robust array iteration, avoiding iloc enlargement errors.
     """
-    delta = data['Close'].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+    if 'Close' not in df.columns:
+        return pd.Series([np.nan] * len(df), index=df.index)
 
-    rs = gain / loss
-    rsi = 100 - (100 / (1 + rs))
+    # 1. Calculate price differences (deltas)
+    delta = df['Close'].diff()
     
-    return rsi
+    # 2. Separate gains (up moves) and losses (down moves)
+    gain = delta.clip(lower=0).fillna(0)
+    loss = (-delta).clip(lower=0).fillna(0)
+    
+    # --- Start of Array-Based Calculation ---
+    
+    # 3. Initialize NumPy arrays to hold averages and RSI result
+    avg_gain = np.zeros_like(gain.values)
+    avg_loss = np.zeros_like(loss.values)
+    rsi = np.full_like(gain.values, np.nan) # Fill with NaN initially
+
+    # 4. Calculate the initial average (SMA for the first 'periods')
+    # Note: We start the average from index 'periods'
+    if len(gain) > periods:
+        avg_gain[periods] = gain.iloc[1:periods+1].mean()
+        avg_loss[periods] = loss.iloc[1:periods+1].mean()
+    else:
+        # Not enough data, return NaN
+        return pd.Series(rsi, index=df.index)
+
+    # 5. Apply Wilder's Smoothing (EMA) for subsequent periods
+    # Formula: NewAvg = (PrevAvg * (N - 1) + CurrentValue) / N
+    for i in range(periods + 1, len(df)):
+        avg_gain[i] = (avg_gain[i-1] * (periods - 1) + gain.iloc[i]) / periods
+        avg_loss[i] = (avg_loss[i-1] * (periods - 1) + loss.iloc[i]) / periods
+
+    # 6. Calculate RS and RSI only for the smoothed values
+    rs = avg_gain[periods:] / avg_loss[periods:]
+    rsi[periods:] = 100 - (100 / (1 + rs))
+    
+    # 7. Convert the NumPy array back to a Pandas Series with correct index
+    return pd.Series(rsi, index=df.index)
 
 #------------------------------------END OF THAWZIN PART-------------------------------------
 

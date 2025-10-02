@@ -13,6 +13,9 @@ from dotenv import load_dotenv
 
 load_dotenv() 
 
+# News Fetching Libraries
+import feedparser
+import urllib.parse
 
 
 # --- Load API Key from Environment Variable --- 
@@ -54,3 +57,30 @@ def call_huggingface_api(prompt: str) -> str:
     except Exception as e:
         print(f"Error during API call: {e}")
         return "Error occurred while generating the response."
+    
+@st.cache_data(ttl=600) # Cache news for 10 minutes
+def fetch_latest_news(query: str, limit: int = 8):
+    """Fetches the latest news headlines for a given query from Google News RSS."""
+    
+    encoded_query = urllib.parse.quote(f"{query} stock") # Added "stock" to query for relevance
+    url = f"https://news.google.com/rss/search?q={encoded_query}&hl=en-US&gl=US&ceid=US:en"
+    
+    try:
+        feed = feedparser.parse(url)
+        if not feed.entries:
+            return []
+            
+        # Sort entries by the 'published_parsed' field (a standard time tuple)
+        sorted_entries = sorted(feed.entries, key=lambda entry: entry.published_parsed or (0,0,0,0,0,0,0,0,0), reverse=True)
+        
+        return [
+            {
+                "Title": entry.title,
+                "Source": entry.source.title if 'source' in entry else 'Google News',
+                "URL": entry.link
+            }
+            for entry in sorted_entries[:limit]
+        ]
+    except Exception as e:
+        st.error(f"Error fetching news: {e}")
+        return []
