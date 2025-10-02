@@ -617,6 +617,7 @@ elif dashboard_selection == "Trends Analysis":
             yaxis_title="Price($)",
             hovermode="x unified"
         )
+        return fig
 
     def plot_trends(data, fig):
         '''
@@ -679,11 +680,23 @@ elif dashboard_selection == "Trends Analysis":
                 orientation="v"
             )
         )
+        return fig
 
     def plot_candles(data, fig):
-
+        # Create subplots: 2 rows, shared X-axis, Price (row 1) is taller than Volume (row 2)
+        
+        new_fig = make_subplots(
+            rows=2, cols=1, 
+            shared_xaxes=True, 
+            vertical_spacing=0.05,
+            row_heights=[0.7, 0.3]
+            )
+        
+        for trace in fig.data:
+            new_fig.add_trace(trace, row=1, col=1)
+        
         # 1. Candlestick Chart (Row 1)
-        fig.add_trace(go.Candlestick(
+        new_fig.add_trace(go.Candlestick(
             x=data.index,
             open=data['Open'],
             high=data['High'],
@@ -691,21 +704,38 @@ elif dashboard_selection == "Trends Analysis":
             close=data['Close'],
             name='Price',
             showlegend=True
-        ))
+        ), row=1, col=1)
+        
+        # 2. Volume Bar Chart (Row 2)
+        # Determine bar color based on daily movement (Close > Open = Green; else Red)
+        volume_colors = ['green' if data['Close'].iloc[i] > data['Open'].iloc[i] else 'red'
+                            for i in range(len(data))]
 
-        fig.update_layout(
-            title="CandleStick Plot",
-            xaxis_title="Date",
+        new_fig.add_trace(go.Bar(
+            x=data.index,
+            y=data['Volume'],
+            marker_color=volume_colors,
+            name='Volume'
+            ), row=2, col=1)
+
+        # Update layout for a cleaner financial look
+        new_fig.update_layout(
+            title_text=f"Historical Price and Volume Analysis for {user_ticker}",
+            xaxis_rangeslider_visible=False, # Hide the main range slider
+            xaxis2_title="Date",
             yaxis_title="Price ($)",
-            hovermode="x unified",
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1
+            yaxis2_title="Volume",
+            height=700,
+            template='plotly_white'
             )
-        )
+                
+        # Finalize axis visibility and ranges
+        new_fig.update_xaxes(showgrid=True, row=1, col=1)
+        new_fig.update_yaxes(showgrid=True, row=1, col=1)
+        new_fig.update_yaxes(showgrid=True, row=2, col=1)
+
+        return new_fig 
+        
 
 
     if user_ticker:
@@ -773,7 +803,7 @@ elif dashboard_selection == "Trends Analysis":
             valid_selection = []
             for option in selected_options:
                 if option in indicators_plot:
-                    indicators_plot[option]["function"](data, fig)
+                    fig = indicators_plot[option]["function"](data, fig)
                     valid_selection.append(option)
 
             st.plotly_chart(fig, use_container_width=True)
