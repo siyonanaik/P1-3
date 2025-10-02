@@ -1,3 +1,8 @@
+# --- Author : THAW ZIN HTUN ---
+# --- To pass the prompt to Hugging Face API and get the response ---
+# Note: Please feel free to use this function in your own part of the code 
+# Please do not modify this function unless approved by me (Thaw Zin)
+
 from huggingface_hub import InferenceClient 
 
 import streamlit as st 
@@ -22,10 +27,7 @@ except KeyError:
 
     st.stop()  # Stops the app from running further
 
-# --- Author : THAW ZIN ---
-# --- To pass the prompt to Hugging Face API and get the response ---
-# Note: Please feel free to use this function in your own part of the code 
-# Please do not modify this function unless approved by me (Thaw Zin)
+
 def call_huggingface_api(prompt: str) -> str:
     """
     Handles the API call to Hugging Face for text generation.

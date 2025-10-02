@@ -3,12 +3,26 @@ import pandas as pd
 import yfinance as yf
 import plotly.express as px
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import mpld3
 import streamlit.components.v1 as components
 from datetime import datetime, timedelta
 from calculations import *
 from apihandler import *
 import csv
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+
+# --- Display different dashboards based on selection For different Team Members---
+
+#------------------------------------START OF THAW ZIN PART-------------------------------
+
+# --- SESSION STATE INITIALIZATION ---
+if 'stock_data_cache' not in st.session_state:
+    st.session_state['stock_data_cache'] = {} # Stores {ticker: 3Y_dataframe}
+if 'current_ticker' not in st.session_state:
+    st.session_state['current_ticker'] = ""
+
 
 # Set up the page configuration
 st.set_page_config(
@@ -16,13 +30,13 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
 )
-
+ 
 # --- Dashboard UI (Frontend) ---
 
 st.title("Financial Trend Analysis Dashboard")
 
 st.markdown("""
-Welcome to the P1-3's historical & live financial data analysis dashboard! This tool allows you
+Welcome to the P1-3's live & historical financial data analysis dashboard! This tool allows you
 to analyze stock tickers and get AI-powered insights.
 """)
 
@@ -30,70 +44,192 @@ to analyze stock tickers and get AI-powered insights.
 st.sidebar.title("Dashboard Menu")
 dashboard_selection = st.sidebar.radio(
     "Select a dashboard view:",
-    ("Stock Price and RSI", "SMA & EMA", "Daily Returns", "Max Profit Calculation", "Trends Analysis")
+    ("Ticker Input" , "Trends Analysis" , "Daily Returns", "SMA & EMA",  "RSI Visualization & Explanation", "Max Profit Calculation")
 )
 
-# --- Display different dashboards based on selection For different Team Members---
 
-#------------------------------------START OF THAW ZIN PART-------------------------------
-if dashboard_selection == "Stock Price and RSI":
+if dashboard_selection == "Ticker Input":
     st.markdown("---")
-    st.header("Live Stock Ticker Analysis")
+    st.header("Please input Stock Ticker To view Various Analysis")
 
-    ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", "MSFT").upper()
+    # Use session state to maintain the input value across reruns
+    ticker_symbol_input = st.text_input(
+        "Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", 
+        value=st.session_state.current_ticker
+    ).upper()
 
-    if ticker_symbol:
+    # Only proceed if the input has changed or is not empty
+    if ticker_symbol_input and ticker_symbol_input != st.session_state.current_ticker:
+        st.session_state.current_ticker = ticker_symbol_input # Update current ticker
+
+        # --- DATA FETCHING LOGIC (Max 3Y range) ---
+        MAX_TIME_RANGE = timedelta(days=365 * 3) # 3 Years
+        end_date = datetime.now()
+        start_date = end_date - MAX_TIME_RANGE
+        ticker = st.session_state.current_ticker
+        
         try:
-            # Fetch data for the last year
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=365)
-            
-            with st.spinner(f"Fetching data for {ticker_symbol}..."):
-                stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
-            
-            if stock_data.empty:
-                st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
+            with st.spinner(f"Fetching **3 years** of historical data for {ticker}..."):
+                # Fetch data up to the maximum required range (3Y)
+                stock_data_3y = yf.download(ticker, start=start_date, end=end_date, progress=False)
+
+            if stock_data_3y.empty:
+                st.error(f"Could not find data for ticker: {ticker}. Please check the symbol and try again.")
+                st.session_state.current_ticker = "" # Reset ticker on error
+                st.session_state.stock_data_cache.pop(ticker, None) # Remove from cache
             else:
                 # Flatten columns if multi-level
-                if isinstance(stock_data.columns, pd.MultiIndex):
-                    stock_data.columns = stock_data.columns.get_level_values(0)
-
-                # --- Stock Price and RSI section ---
-                st.subheader(f"Historical Price for {ticker_symbol}")
-                fig_price = px.line(
-                    stock_data,
-                    x=stock_data.index,
-                    y='Close',
-                    title=f"Historical Price of {ticker_symbol}",
-                    labels={'Close': 'Price ($)'}
-                )
-                st.plotly_chart(fig_price, use_container_width=True)
-
-                # Calculate and plot RSI
-                stock_data['RSI'] = calculate_rsi(stock_data)
+                if isinstance(stock_data_3y.columns, pd.MultiIndex):
+                    stock_data_3y.columns = stock_data_3y.columns.get_level_values(0)
                 
-                st.subheader(f"Relative Strength Index (RSI) for {ticker_symbol}")
-                fig_rsi = px.line(
-                    stock_data,
-                    x=stock_data.index,
-                    y='RSI',
-                    title=f"RSI for {ticker_symbol}",
-                    labels={'RSI': 'Value'},
-                )
-                fig_rsi.add_hline(y=70, line_dash="dash", line_color="red", annotation_text="Overbought")
-                fig_rsi.add_hline(y=30, line_dash="dash", line_color="green", annotation_text="Oversold")
-                st.plotly_chart(fig_rsi, use_container_width=True)
-
-                # --- RSI explanation with API call ---
-                st.markdown("---")
-                st.write("### What is RSI?")
-                with st.spinner("Fetching RSI explanation from Hugging Face..."):
-                    rsi_explanation = call_huggingface_api("What is the Relative Strength Index (RSI)? Explain it simply for a beginner.")
-                st.info(rsi_explanation)
+                # Store the full 3Y data in the cache under the ticker key
+                st.session_state.stock_data_cache[ticker] = stock_data_3y
+                st.success(f"Data for **{ticker}** (3Y range) fetched and cached successfully!")
+                
 
         except Exception as e:
-            st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
+            st.error(f"An error occurred during data fetching for {ticker}: {e}")
+            st.session_state.current_ticker = "" # Reset ticker on error
+            st.session_state.stock_data_cache.pop(ticker, None) # Remove from cache
+
+# --- Stock Price and RSI Dashboard Block ---
+
+elif dashboard_selection == "RSI Visualization & Explanation":
+    st.markdown("---")
+    
+    ticker_symbol = st.session_state.current_ticker # Use the cached & nstored ticker
+
+    if not ticker_symbol:
+        st.warning("Please enter a stock ticker in the **Ticker Input** section first.")
+    elif ticker_symbol not in st.session_state.stock_data_cache:
+        st.warning(f"No 3-year data found for **{ticker_symbol}**. Please re-enter the ticker in the **Ticker Input** section.")
+    else:
+        # --- DATA RETRIEVAL from session ---
+        full_stock_data = st.session_state.stock_data_cache[ticker_symbol]
+
+        # --- NEW TIME RANGE SELECTION LOGIC ---
+        TIME_RANGES = {
+            # "1D": timedelta(days=1), # Too short for meaningful RSI
+            "1W": timedelta(weeks=1),
+            "1M": timedelta(days=30), # Approximation
+            "3M": timedelta(days=90), # Approximation
+            "1Y": timedelta(days=365),
+            "3Y": timedelta(days=365 * 3), # Full range , cos assignment brief about max 3Y - thawzin
+        }
+
+        selected_range_label = st.radio(
+            "Select Time Range:",
+            options=list(TIME_RANGES.keys()),
+            index=4, # Default to 1Y
+            horizontal=True
+        )
+        
+        # Calculate start date based on selected label
+        range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
+        start_date_limit = datetime.now() - range_delta
+        
+        # Filter the full data for the selected range (CRUCIAL STEP)
+        stock_data = full_stock_data[full_stock_data.index >= start_date_limit.strftime('%Y-%m-%d')]
+
+        if stock_data.empty:
+             st.error(f"No data available for the selected range: {selected_range_label}. Try selecting a larger range.")
+        else:
+            st.success(f"Displaying data for **{ticker_symbol}** over the last **{selected_range_label}** from the cached 3Y dataset.")
+
+            # The rest of  plotting logic 
+            # uses the filtered 'stock_data' DataFrame.
+
+            # --- Candlestick and Volume Subplot Section (Current Ticker) ---
+            st.subheader(f"Candlestick Price and Volume for {ticker_symbol} ({selected_range_label})")
             
+            # Create subplots: 2 rows, shared X-axis, Price (row 1) is taller than Volume (row 2)
+            fig_combined = make_subplots(
+                rows=2, cols=1, 
+                shared_xaxes=True, 
+                vertical_spacing=0.05,
+                row_heights=[0.7, 0.3]
+            )
+            
+            # 1. Candlestick Chart (Row 1)
+            candlestick = go.Candlestick(
+                x=stock_data.index,
+                open=stock_data['Open'],
+                high=stock_data['High'],
+                low=stock_data['Low'],
+                close=stock_data['Close'],
+                name='Price'
+            )
+            fig_combined.add_trace(candlestick, row=1, col=1)
+            
+            # 2. Volume Bar Chart (Row 2)
+            # Determine bar color based on daily movement (Close > Open = Green; else Red)
+            volume_colors = ['green' if stock_data['Close'].iloc[i] > stock_data['Open'].iloc[i] else 'red'
+                             for i in range(len(stock_data))]
+
+            volume_bar = go.Bar(
+                x=stock_data.index,
+                y=stock_data['Volume'],
+                marker_color=volume_colors,
+                name='Volume'
+            )
+            fig_combined.add_trace(volume_bar, row=2, col=1)
+
+            # Update layout for a cleaner financial look
+            fig_combined.update_layout(
+                title_text=f"Historical Price and Volume Analysis for {ticker_symbol}",
+                xaxis_rangeslider_visible=False, # Hide the main range slider
+                xaxis2_title="Date",
+                yaxis_title="Price ($)",
+                yaxis2_title="Volume",
+                height=700,
+                template='plotly_white'
+            )
+            
+            # Finalize axis visibility and ranges
+            fig_combined.update_xaxes(showgrid=True, row=1, col=1)
+            fig_combined.update_yaxes(showgrid=True, row=1, col=1)
+            fig_combined.update_yaxes(showgrid=True, row=2, col=1)
+            
+            st.plotly_chart(fig_combined, use_container_width=True)
+
+            # --- RSI Calculation and Plot ---
+            # Calculate RSI on the *filtered* data
+            stock_data['RSI'] = calculate_rsi(stock_data) 
+            
+            st.subheader(f"Relative Strength Index (RSI) for {ticker_symbol} ({selected_range_label})")
+            fig_rsi = px.line(
+                stock_data,
+                x=stock_data.index,
+                y='RSI',
+                title=f"RSI for {ticker_symbol}",
+                labels={'RSI': 'Value'},
+            )
+            fig_rsi.add_hline(y=70, line_dash="dash", line_color="red", annotation_text="Overbought")
+            fig_rsi.add_hline(y=30, line_dash="dash", line_color="green", annotation_text="Oversold")
+            st.plotly_chart(fig_rsi, use_container_width=True)
+
+            # --- RSI explanation with API call ---
+            st.markdown("---")
+            st.write("### What is RSI?")
+
+            with st.spinner("Generating RSI explanation from Language Model..."):
+                try:
+                    rsi_explanation = WAITcall_huggingface_api(
+                        # LLM promtt for RSI explanation - thawzin 
+                        "What is the Relative Strength Index (RSI)? Explain it simply for a beginner."
+                    )
+                except Exception as e:
+                    # Fallback hardcoded explanation if API fails , cos we using free tier 
+                    rsi_explanation = (
+                        "The Relative Strength Index (RSI) is a popular momentum indicator used "
+                        "in technical analysis. It measures the speed and size of recent price "
+                        "changes to identify whether a stock is overbought or oversold. "
+                        
+                        "RSI values range from 0 to 100: generally, above 70 means overbought, "
+                        "and below 30 means oversold."
+                    )
+
+            st.info(rsi_explanation)
 #------------------------------------END OF THAW ZIN PART------------------------------------
             
             
@@ -246,8 +382,159 @@ elif dashboard_selection == "SMA & EMA":
 
 elif dashboard_selection == "Daily Returns":
     st.markdown("---")
-    st.header("Daily Returns Dashboard")
-    st.info("The Daily Returns dashboard is not yet implemented.")
+    st.header("Live Stock Ticker Analysis")
+
+    ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
+
+    # --- NEW TIME RANGE SELECTION LOGIC ---
+    TIME_RANGES = {
+        "1W": timedelta(weeks=1),
+        "1M": timedelta(days=30),      # Approximation
+        "3M": timedelta(days=90),      # Approximation
+        "1Y": timedelta(days=365),
+        "3Y": timedelta(days=365 * 3), # Approximation
+    }
+
+    selected_range_label = st.radio(
+        "Select Time Range:",
+        options=list(TIME_RANGES.keys()),
+        index=3, # Default to 1Y
+        horizontal=True
+    )
+    
+    if ticker_symbol:
+        try:
+            # Fetch data based on user selected range
+            end_date = datetime.now()
+            
+            # Calculate start date based on selected label
+            range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
+            start_date = end_date - range_delta
+            
+            with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
+                stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
+            
+            if stock_data.empty:
+                st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
+            else:
+                # Flatten columns if multi-level
+                if isinstance(stock_data.columns, pd.MultiIndex):
+                    stock_data.columns = stock_data.columns.get_level_values(0)
+
+                # Stock Data Handling
+                data = {
+                    'Date': stock_data.index,
+                    'Open': stock_data['Open'],
+                    'High': stock_data['High'],
+                    'Low': stock_data['Low'],
+                    'Close': stock_data['Close'],
+                    'Volume': stock_data['Volume'],
+                }
+
+                df = pd.DataFrame(data)
+
+                # --- Close and Close+Atr and ATR Section (Current Ticker) ---
+                st.subheader(f"Average True Range (ATR) Analysis for {ticker_symbol}")
+                
+                # Create subplots: 2 rows, shared X-axis, Price (row 1) is taller than ATR (row 2)
+                fig_combined = make_subplots(
+                    rows=2, cols=1, 
+                    shared_xaxes=True, 
+                    vertical_spacing=0.05,
+                    row_heights=[0.7, 0.3]
+                )
+                
+                # 1. Close and Close+ATR Line Chart (Row 1)
+                close_line = go.Scatter(
+                    x=df['Date'],
+                    y=df['Close'],
+                    mode='lines',
+                    name='Close'
+                )
+                fig_combined.add_trace(close_line, row=1, col=1)
+
+                df['TR'] = calculate_true_range(df['High'], df['Low'], df['Close'])
+                df['ATR'] = calculate_average_true_range(df['TR'])
+                df['Close+ATR'] = [close + atr for close, atr in zip(df['Close'], df['ATR'])]
+
+                close_atr_line = go.Scatter(
+                    x=df['Date'],
+                    y=df['Close+ATR'],
+                    mode='lines',
+                    name='Close+ATR'
+                )
+                fig_combined.add_trace(close_atr_line, row=1, col=1)
+            
+
+                # 2. ATR Line Chart (Row 2)
+                atr_line = go.Scatter(
+                    x=df['Date'],
+                    y=df['ATR'],
+                    mode='lines',
+                    name='ATR'
+                )
+                fig_combined.add_trace(atr_line, row=2, col=1)
+
+                # Update layout for a cleaner financial look
+                fig_combined.update_layout(
+                    title_text=f"Close Price with ATR Analysis for {ticker_symbol}",
+                    xaxis_rangeslider_visible=False, # Hide the main range slider
+                    xaxis2_title="Date",
+                    yaxis_title="Price ($)",
+                    yaxis2_title="ATR ($)",
+                    height=700,
+                    template='plotly_white'
+                )
+                
+                # Finalize axis visibility and ranges
+                fig_combined.update_xaxes(showgrid=True, row=1, col=1)
+                fig_combined.update_yaxes(showgrid=True, row=1, col=1)
+                fig_combined.update_yaxes(showgrid=True, row=2, col=1)
+                
+                st.plotly_chart(fig_combined, use_container_width=True)
+
+
+                st.write("### What is ATR?")
+
+                atr_explanation = (
+                    "The average true range (ATR) is a technical analysis indicator that measures market volatility by "
+                    "decomposing the entire range of an asset price for that period. The true range indicator is taken as "
+                    "the greatest of the following: current high less the current low; the absolute value of the current high "
+                    "less the previous close; and the absolute value of the current low less the previous close. The ATR is then "
+                    "a moving average of the true ranges. While the ATR doesn't tell us in which direction the breakout will occur, "
+                    "it can be added to the closing price, and the trader can buy whenever the next day's price trades above that value. "
+                    "Trading signals occur relatively infrequently but usually indicate significant breakout points. The logic behind these "
+                    "signals is that whenever a price closes more than an ATR above the most recent close, a change in volatility has occurred."
+                )
+
+                st.info(atr_explanation)
+                st.markdown("---")
+
+
+                # --- Daily Returns Calculation and Plot ---
+                df['DailyReturns'] = calculate_daily_returns(df['Close'])
+                
+                st.subheader(f"Daily Returns for {ticker_symbol}")
+
+                # Daily Returns Plot
+                fig_daily_return = px.line(
+                    x=df['Date'],
+                    y=df['DailyReturns'],
+                    title=f"Daily Returns for {ticker_symbol}",
+                )
+
+                # Rename X and Y Axis
+                fig_daily_return.update_layout(
+                    xaxis_title = "Date",
+                    yaxis_title = "Daily Returns (%)"
+                )
+
+                st.plotly_chart(fig_daily_return, use_container_width=True)
+
+            
+
+        except Exception as e:
+            st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
 
 #------------------------------------END OF KAI REI PART------------------------------------
 
@@ -293,7 +580,7 @@ elif dashboard_selection == "Trends Analysis":
 
     user_ticker = st.text_input("Enter a Ticker Symbol: (e.g. AAPL, GOOG ...)").upper()
 
-    def plot_bollinger_bands(data):
+    def plot_bollinger_bands(data, ax):
         bands = bollinger_bands(data=data, window=5, k=2)
 
         plt.plot(bands['SMA'], label="SMA", color='orange')
@@ -301,11 +588,42 @@ elif dashboard_selection == "Trends Analysis":
         plt.fill_between(data.index, bands['UpperBand'], bands['LowerBand'], color='grey', alpha=0.4)
         plt.plot(bands['LowerBand'], label="Lower Band", color='red', linestyle='-')
 
-    def plot_trends(data):
+    def plot_trends(data, ax):
         for i in range(1, len(data)):
             color = "green" if data["Close"].iloc[i] > data["Close"].iloc[i-1] else \
                     "red" if data["Close"].iloc[i] < data["Close"].iloc[i-1] else "grey"
             plt.plot(data.index[i-1:i+1], data["Close"].iloc[i-1:i+1], color=color, linewidth=1.8)
+
+    def plot_candles(data, ax):
+        base = data.index[0].toordinal()
+
+        for idx, row in data.iterrows():
+
+            x = idx.toordinal() - base
+            # Candle color
+            color = "green" if row.Close >= row.Open else "red"
+
+            # Candle body
+            lower = min(row.Open, row.Close)
+            height = abs(row.Close - row.Open)
+            ax.add_patch(
+                patches.Rectangle(
+                    (x - 0.4, lower),
+                    0.8,
+                    height if height > 0 else 0.01,
+                    facecolor=color,
+                    edgecolor=color
+                )
+            )
+
+            # Candle Wick
+            ax.vlines(x, row.Low, row.High, color=color, linewidth=2)
+
+        ax.set_xlim(-1, len(data))
+        ax.set_xticks(range(0, len(data), max(1, len(data)//10)))
+        ax.set_xticklabels(data.index.strftime("%Y-%m-%d")[::max(1, len(data)//10)])
+        ax.autoscale_view()
+
 
     if user_ticker:
         # Getting 3 years of data from yfinance using 
@@ -313,31 +631,43 @@ elif dashboard_selection == "Trends Analysis":
         ticker = yf.Ticker(user_ticker)
         data = ticker.history(period="3Y")
 
+        # Cleaning data
+        # Reindexing to fill in weekends
+        data.index = pd.to_datetime(data.index)
+        full_index = pd.date_range(start=data.index.min(), end=data.index.max(), freq='D')
+        data = data.reindex(full_index)
+        # Forward filling missing data
+        data = data.ffill()
+
         indicators_plot = {
             "Bollinger Bands": plot_bollinger_bands,
-            "Trends": plot_trends
+            "Trends": plot_trends,
+            "Candles": plot_candles
         }
 
         selected_options = st.multiselect(
             "Select indicators to display:",
-            ["Bollinger Bands", "Trends"]
+            ["Bollinger Bands", "Trends", "Candles"]
         )
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(data['Close'], label="Price", color='blue')
+        #fig = plt.figure(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(14, 8))
+        if "Candles" not in selected_options:
+            ax.plot(data['Close'], label="Price", color='blue')
+
 
         for option in selected_options:
             if option in indicators_plot:
-                indicators_plot[option](data)
+                indicators_plot[option](data, ax)
 
-
+        
         # Plotting closing price
         plt.title(f"Closing price of {user_ticker}")
-        plt.legend()
-        fig = plt.gcf()       
+        plt.legend()     
 
         # Turning static plot to interactive
         fig_html = mpld3.fig_to_html(fig)
-        components.html(fig_html, height=1000)
+        components.html(fig_html, height=1000, width=1000)
+        
 #------------------------------------END OF YUAN WEI PART-----------------------------------
 
