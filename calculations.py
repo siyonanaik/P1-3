@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv
 import matplotlib.pyplot as plt
+import yfinance as yf
 
 
 # -------------------------------------------------------------------------
@@ -13,18 +14,50 @@ import matplotlib.pyplot as plt
 
 #------------------------------------START OF THAWZIN PART-----------------------------------
 
-def calculate_rsi(data, window=14):
+# Ensure this function replaces the one in your utility section
+def calculate_rsi(df: pd.DataFrame, periods: int = 14) -> pd.Series:
     """
-    Calculates the Relative Strength Index (RSI) for a given stock price data.
+    Calculates the Relative Strength Index (RSI) using J. Welles Wilder's method.
+    Uses numpy for robust array iteration, avoiding iloc enlargement errors.
     """
-    delta = data['Close'].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+    if 'Close' not in df.columns:
+        return pd.Series([np.nan] * len(df), index=df.index)
 
-    rs = gain / loss
-    rsi = 100 - (100 / (1 + rs))
+    # 1. Calculate price differences (deltas)
+    delta = df['Close'].diff()
     
-    return rsi
+    # 2. Separate gains (up moves) and losses (down moves)
+    gain = delta.clip(lower=0).fillna(0)
+    loss = (-delta).clip(lower=0).fillna(0)
+    
+    # --- Start of Array-Based Calculation ---
+    
+    # 3. Initialize NumPy arrays to hold averages and RSI result
+    avg_gain = np.zeros_like(gain.values)
+    avg_loss = np.zeros_like(loss.values)
+    rsi = np.full_like(gain.values, np.nan) # Fill with NaN initially
+
+    # 4. Calculate the initial average (SMA for the first 'periods')
+    # Note: We start the average from index 'periods'
+    if len(gain) > periods:
+        avg_gain[periods] = gain.iloc[1:periods+1].mean()
+        avg_loss[periods] = loss.iloc[1:periods+1].mean()
+    else:
+        # Not enough data, return NaN
+        return pd.Series(rsi, index=df.index)
+
+    # 5. Apply Wilder's Smoothing (EMA) for subsequent periods
+    # Formula: NewAvg = (PrevAvg * (N - 1) + CurrentValue) / N
+    for i in range(periods + 1, len(df)):
+        avg_gain[i] = (avg_gain[i-1] * (periods - 1) + gain.iloc[i]) / periods
+        avg_loss[i] = (avg_loss[i-1] * (periods - 1) + loss.iloc[i]) / periods
+
+    # 6. Calculate RS and RSI only for the smoothed values
+    rs = avg_gain[periods:] / avg_loss[periods:]
+    rsi[periods:] = 100 - (100 / (1 + rs))
+    
+    # 7. Convert the NumPy array back to a Pandas Series with correct index
+    return pd.Series(rsi, index=df.index)
 
 #------------------------------------END OF THAWZIN PART-------------------------------------
 
@@ -164,12 +197,17 @@ def calculate_average_true_range(tr_lst):
 
 
 #------------------------------------START OF WYNN PART--------------------------------------
-# Load data
-file_path = "nvidia_cleaned.csv"   
-df = pd.read_csv(file_path)
 
 # Max profit calculation
 def max_profit_with_days(prices, dates):
+    """
+    Calculate maximum profit for a given stock price period 
+
+    Parameters:
+    - Prices : list of price values 
+    - Dates : list of corresponding dates
+    """
+
     profit = 0
     transactions = []  # to store transaction details
     for i in range(1, len(prices)):
@@ -185,47 +223,7 @@ def max_profit_with_days(prices, dates):
     return profit, transactions
 
 
-prices = df["Close"].values
-dates = pd.to_datetime(df["Date"]).values  
 
-total_profit, transactions = max_profit_with_days(prices, dates)
-print(f"Total Max Profit: {total_profit:.2f}")
-print(f"Number of transactions: {len(transactions)}")
-
-
-transactions_df = pd.DataFrame(transactions)
-
-# Sorting
-transactions_df = transactions_df.sort_values(by="Buy Date")
-
-# Find top 5 profits
-top5_df = transactions_df.sort_values(by="Profit", ascending=False).head(5)
-
-# Plot profits
-plt.figure(figsize=(12,6))
-plt.plot(transactions_df["Buy Date"], transactions_df["Profit"],
-        linestyle='-', color='lightpink', label="Total Profits")
-
-# Highlight top 5 profits
-plt.scatter(top5_df["Buy Date"], top5_df["Profit"], 
-            color="lightblue", s=100, label="Top 5 Profits")
-
-# Writting top 5
-for _, row in top5_df.iterrows():
-    plt.annotate(f"{row['Profit']:.2f}",
-                 (row['Buy Date'], row['Profit']),
-                 textcoords="offset points", xytext=(0,10), ha='center',
-                 fontsize=9, color="blue")
-
-# Labels and formatting
-plt.xlabel("Buy Date")
-plt.ylabel("Profit")
-plt.title("Profit per Transaction")
-plt.xticks(rotation=45)
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
 #------------------------------------END OF WYNN PART----------------------------------------
 
 

@@ -7,5 +7,6 @@ huggingface_hub
 python-dotenv
 matplotlib
 mpld3
+feedparser
 #os
 #>>>>>>> 8a35a7d (adding max profit)
