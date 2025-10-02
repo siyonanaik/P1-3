@@ -543,43 +543,109 @@ elif dashboard_selection == "Daily Returns":
 elif dashboard_selection == "Max Profit Calculation":
     st.markdown("---")
     st.header("Max Profit Calculation Dashboard")
+    
+    #Stock Ticker Selection
+    ticker = st.text_input("Enter Stock Ticker Symbol").upper()
 
-    #Plot profit
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=transactions_df["Buy Date"],
-        y=transactions_df["Profit"],
-        mode="lines+markers",
-        line=dict(color="lightpink"),
-        name="Total Profits"
-    ))
+    if not ticker:
+        st.warning("Please enter a valid stock ticker symbol")
+        st.stop()
 
-    # Highlight top 5 profits
-    fig.add_trace(go.Scatter(
-        x=top5_df["Buy Date"],
-        y=top5_df["Profit"],
-        mode="markers+text",
-        marker=dict(color="lightblue", size=10),
-        text=[f"{float(p):.2f}" for p in top5_df["Profit"].values],
-        textposition="top center",
-        name="Top 5 Profits"
-    ))
+    #Stock Time Period Selection
+    period_options = {
+        "1 Week": 7,
+        "1 Month": 30,
+        "3 Months": 90,
+        "6 Months": 180,
+        "1 Year": 365,
+        "2 Years": 365*2,
+        "3 Years": 365*3
+    }
 
-    #Layout 
-    fig.update_layout(
-        title="Profit per Transaction",
-        xaxis_title="Buy Date",
-        yaxis_title="Profit",
-        template="plotly_white",
-        xaxis=dict(tickangle=45, showgrid=True, type='date'),
-        yaxis=dict(showgrid=True),
-        height=600,
-        width=1000
+    selected_period = st.selectbox(
+        "Select Time Period",
+        list(period_options.keys()),
+        index=3  # Default to 1 Year
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    # Calculate Date Range
+    if period_options[selected_period]:
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=period_options[selected_period])
 
-    st.info('The maximum profit calculation is used to determine how much profit could be earned by buying and selling a stock whenever its price increases from one day to the next. It goes through each day in the stock’s price history and, if the price increased compared to the previous day, it assumes a “buy yesterday, sell today” transaction. Each profitable transaction is recorded with its buy and sell dates, prices, and the profit made. The function then sums up all the daily gains to give the total maximum profit.')
+    # Download Stock Data
+    with st.spinner(f"Fetching {ticker} data..."):
+        try:
+            df = yf.download(ticker, start=start_date, end=end_date, progress=False)
+            
+            if df.empty:
+                st.error(f"No data available for {ticker} in selected period")
+                st.stop()
+                
+            # Reset Index To Keep "Date" As A Column
+            df.reset_index(inplace=True)
+            
+        except Exception as e:
+            st.error(f"Error downloading data: {str(e)}")
+            st.stop()
+
+        # Sorting Transactions
+        prices = df["Close"].values
+        dates = pd.to_datetime(df["Date"]).values  
+
+        total_profit, transactions = max_profit_with_days(prices, dates)
+        rounded_total_profit = round(float(total_profit),2)
+
+        print(f"Total Max Profit: {rounded_total_profit}")
+        print(f"Number of transactions: {len(transactions)}")
+
+        transactions_df = pd.DataFrame(transactions)
+
+        transactions_df["Buy Date"] = pd.to_datetime(transactions_df["Buy Date"])
+        transactions_df["Profit"] = transactions_df["Profit"].astype(float)
+
+
+        # Find Top 5 Profit Transactions
+        top5_df = transactions_df.sort_values(by="Profit", ascending=False).head(5)
+        top5_df["Buy Date"] = pd.to_datetime(top5_df["Buy Date"])
+        top5_df["Profit"] = top5_df["Profit"].astype(float)
+        
+        #Plot Total Profit
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=transactions_df["Buy Date"],
+            y=transactions_df["Profit"],
+            mode="lines+markers",
+            line=dict(color="lightpink"),
+            name="Total Profits"
+        ))
+
+        # Highlight Top 5 Profits
+        fig.add_trace(go.Scatter(
+            x=top5_df["Buy Date"],
+            y=top5_df["Profit"],
+            mode="markers+text",
+            marker=dict(color="lightblue", size=10),
+            text=[f"{float(p):.2f}" for p in top5_df["Profit"].values],
+            textposition="top center",
+            name="Top 5 Profits"
+        ))
+
+        #Layout 
+        fig.update_layout(
+            title="Profit per Transaction",
+            xaxis_title="Buy Date",
+            yaxis_title="Profit",
+            template="plotly_white",
+            xaxis=dict(tickangle=45, showgrid=True, type='date'),
+            yaxis=dict(showgrid=True),
+            height=600,
+            width=1000
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.info('The maximum profit calculation is used to determine how much profit could be earned by buying and selling a stock whenever its price increases from one day to the next. It goes through each day in the stock’s price history and, if the price increased compared to the previous day, it assumes a “buy yesterday, sell today” transaction. Each profitable transaction is recorded with its buy and sell dates, prices, and the profit made. The function then sums up all the daily gains to give the total maximum profit.')
 
 #------------------------------------END OF WYNN PART---------------------------------------
 
