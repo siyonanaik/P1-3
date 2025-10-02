@@ -564,18 +564,17 @@ elif dashboard_selection == "Trends Analysis":
 
     user_ticker = st.text_input("Enter a Ticker Symbol: (e.g. AAPL, GOOG ...)").upper()
 
-    def plot_bollinger_bands(data, fig, window=5, k=2):
+    def plot_bollinger_bands(data, fig):
         '''
         Plots Bollinger Bands on plotly chart after
         running bollinger_bands from calculations.py
 
         Parameters:
-        data:
-        fig:
-        window:
-        k:
-        
+        data: Stock's Dataframe consisting on Close values
+        fig: Plotly's Figure object
         '''
+        window = st.slider("Window", 1, 50, 5)
+        k = st.slider("Standard Deviation", 1, 10, 2)
 
 
         bands = bollinger_bands(data=data, window=window, k=k)
@@ -615,7 +614,7 @@ elif dashboard_selection == "Trends Analysis":
         fig.update_layout(
             title="Bollinger Bands",
             xaxis_title="Date",
-            yaxis_title="Price",
+            yaxis_title="Price($)",
             hovermode="x unified"
         )
 
@@ -674,7 +673,7 @@ elif dashboard_selection == "Trends Analysis":
         fig.update_layout(
             title="Trend Line Chart",
             xaxis_title="Date",
-            yaxis_title="Close Price",
+            yaxis_title="Price($)",
             hovermode="x unified",
             legend=dict(
                 orientation="v"
@@ -697,7 +696,7 @@ elif dashboard_selection == "Trends Analysis":
         fig.update_layout(
             title="CandleStick Plot",
             xaxis_title="Date",
-            yaxis_title="Close Price",
+            yaxis_title="Price ($)",
             hovermode="x unified",
             legend=dict(
                 orientation="h",
@@ -725,27 +724,63 @@ elif dashboard_selection == "Trends Analysis":
             data = data.ffill()
 
             indicators_plot = {
-                "Bollinger Bands": plot_bollinger_bands,
-                "Trends": plot_trends,
-                "Candles": plot_candles
+                "Bollinger Bands": {"function": plot_bollinger_bands,
+                                    "info": "are a technical analysis tool that consists of three lines: "
+                                    " a middle line which is a simple moving average (SMA), "
+                                    "and two outer bands set a standard deviation above and below the SMA. "
+                                    "These bands dynamically adjust to market volatility, with wider bands "
+                                    "indicating high volatility and narrower bands signaling low volatility. "
+                                    "Traders use Bollinger Bands to identify if a security is overbought or oversold, "
+                                    "gauge price volatility, and potentially identify support and resistance levels or breakout signals"},
+
+                "Price Trends": {"function": plot_trends,
+                           "info": "is the general direction that an asset's price moves over a specific period. "
+                           "There are three main types of price trends: an uptrend (also called a bull market), "
+                           "where prices are rising; a downtrend (or bear market), where prices are falling; and a sideways trend, "
+                           "where prices fluctuate within a narrow, range-bound market without a clear upward or downward direction"},
+
+                "Candles": {"function": plot_candles,
+                            "info": "is a visual tool showing an asset's price movements for a specific time period, "
+                            "displaying the open, close, high, and low prices, with the \"body\" representing the open-to-close range "
+                            "and \"wicks\" (or shadows) indicating the high and low prices"}
             }
 
             selected_options = st.multiselect(
                 "Select indicators to display:",
-                ["Bollinger Bands", "Trends", "Candles"]
+                list(indicators_plot.keys())
             )
 
-            if "Candles" not in selected_options and "Trends" not in selected_options:
+            if "Candles" not in selected_options and "Price Trends" not in selected_options:
                 fig = px.line(data, x=data.index, y="Close", title=f"Closing Price of {user_ticker}", height=600)
+                fig.update_xaxes(
+                    showspikes=True,
+                    spikemode="across",
+                    spikesnap="cursor",
+                    spikecolor="grey",
+                    spikethickness=1
+                )
+                fig.update_yaxes(
+                    showspikes=True,
+                    spikemode="across",
+                    spikesnap="cursor",
+                    spikecolor="grey",
+                    spikethickness=1
+                )
+
             else:
                 fig = go.Figure()
 
-
+            valid_selection = []
             for option in selected_options:
                 if option in indicators_plot:
-                    indicators_plot[option](data, fig)
+                    indicators_plot[option]["function"](data, fig)
+                    valid_selection.append(option)
 
             st.plotly_chart(fig, use_container_width=True)
+
+            for option in valid_selection:
+                st.info(f"**{option}**: {indicators_plot[option]['info']}")
+
 
         except Exception as e:
             st.error(f"Ticker does not exist {e}")
