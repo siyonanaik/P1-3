@@ -543,33 +543,44 @@ elif dashboard_selection == "Daily Returns":
 elif dashboard_selection == "Max Profit Calculation":
     st.markdown("---")
     st.header("Max Profit Calculation Dashboard")
-    # Plot profits
-    maxprofitfig = plt.figure(figsize=(12,6))
-    plt.plot(transactions_df["Buy Date"], transactions_df["Profit"],
-            linestyle='-', color='lightpink', label="Total Profits")
+
+    #Plot profit
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=transactions_df["Buy Date"],
+        y=transactions_df["Profit"],
+        mode="lines+markers",
+        line=dict(color="lightpink"),
+        name="Total Profits"
+    ))
 
     # Highlight top 5 profits
-    plt.scatter(top5_df["Buy Date"], top5_df["Profit"], 
-                color="lightblue", s=100, label="Top 5 Profits")
+    fig.add_trace(go.Scatter(
+        x=top5_df["Buy Date"],
+        y=top5_df["Profit"],
+        mode="markers+text",
+        marker=dict(color="lightblue", size=10),
+        text=[f"{float(p):.2f}" for p in top5_df["Profit"].values],
+        textposition="top center",
+        name="Top 5 Profits"
+    ))
 
-    # Writting top 5
-    for _, row in top5_df.iterrows():
-        plt.annotate(f"{row['Profit']:.2f}",
-                    (row['Buy Date'], row['Profit']),
-                    textcoords="offset points", xytext=(0,10), ha='center',
-                    fontsize=9, color="black")
+    #Layout 
+    fig.update_layout(
+        title="Profit per Transaction",
+        xaxis_title="Buy Date",
+        yaxis_title="Profit",
+        template="plotly_white",
+        xaxis=dict(tickangle=45, showgrid=True, type='date'),
+        yaxis=dict(showgrid=True),
+        height=600,
+        width=1000
+    )
 
-    # Labels and formatting
-    plt.xlabel("Buy Date")
-    plt.ylabel("Profit")
-    plt.title("Profit per Transaction")
-    plt.xticks(rotation=45)
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-    st.pyplot(maxprofitfig)
-    
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.info('The maximum profit calculation is used to determine how much profit could be earned by buying and selling a stock whenever its price increases from one day to the next. It goes through each day in the stock’s price history and, if the price increased compared to the previous day, it assumes a “buy yesterday, sell today” transaction. Each profitable transaction is recorded with its buy and sell dates, prices, and the profit made. The function then sums up all the daily gains to give the total maximum profit.')
+
 #------------------------------------END OF WYNN PART---------------------------------------
 
 #------------------------------------START OF YUAN WEI PART---------------------------------
