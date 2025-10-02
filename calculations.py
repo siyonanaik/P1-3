@@ -165,12 +165,6 @@ def calculate_average_true_range(tr_lst):
 
 
 #------------------------------------START OF WYNN PART--------------------------------------
-# Load data
-ticker = "NVDA"
-df = yf.download(ticker, start="2022-09-12", end="2025-09-12")
-
-# Reset index to keep "Date" as a column
-df.reset_index(inplace=True)
 
 # Max profit calculation
 def max_profit_with_days(prices, dates):
