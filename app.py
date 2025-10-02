@@ -565,7 +565,7 @@ elif dashboard_selection == "Max Profit Calculation":
     selected_period = st.selectbox(
         "Select Time Period",
         list(period_options.keys()),
-        index=4  # Default to 1 Year
+        index=4  # Default is 1 Year
     )
 
     # Calculate Date Range
