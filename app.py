@@ -3,8 +3,6 @@ import pandas as pd
 import yfinance as yf
 import plotly.express as px
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import mpld3
 import streamlit.components.v1 as components
 from datetime import datetime, timedelta
 from calculations import *
@@ -566,94 +564,191 @@ elif dashboard_selection == "Trends Analysis":
 
     user_ticker = st.text_input("Enter a Ticker Symbol: (e.g. AAPL, GOOG ...)").upper()
 
-    def plot_bollinger_bands(data, ax):
-        bands = bollinger_bands(data=data, window=5, k=2)
+    def plot_bollinger_bands(data, fig, window=5, k=2):
+        '''
+        Plots Bollinger Bands on plotly chart after
+        running bollinger_bands from calculations.py
 
-        plt.plot(bands['SMA'], label="SMA", color='orange')
-        plt.plot(bands['UpperBand'], label="Upper Band", color='green', linestyle='-')
-        plt.fill_between(data.index, bands['UpperBand'], bands['LowerBand'], color='grey', alpha=0.4)
-        plt.plot(bands['LowerBand'], label="Lower Band", color='red', linestyle='-')
+        Parameters:
+        data:
+        fig:
+        window:
+        k:
+        
+        '''
 
-    def plot_trends(data, ax):
+
+        bands = bollinger_bands(data=data, window=window, k=k)
+
+        # Closing price line
+        fig.add_trace(go.Scatter(
+            x=data.index, y=data['Close'],
+            name="Closing Price",
+            line=dict(color="blue")
+        ))
+
+        # SMA
+        fig.add_trace(go.Scatter(
+            x=data.index, y=bands['SMA'],
+            name="SMA",
+            line=dict(color="orange")
+        ))
+
+        # Upper Band
+        fig.add_trace(go.Scatter(
+            x=data.index, y=bands['UpperBand'],
+            name="Upper Band",
+            line=dict(color="green"),
+            mode="lines"
+        ))
+
+        # Lower Band
+        fig.add_trace(go.Scatter(
+            x=data.index, y=bands['LowerBand'],
+            name="Lower Band",
+            line=dict(color="red"),
+            mode="lines",
+            fill='tonexty',         # fills to previous trace (Upper Band)
+            fillcolor="rgba(128,128,128,0.3)"
+        ))
+
+        fig.update_layout(
+            title="Bollinger Bands",
+            xaxis_title="Date",
+            yaxis_title="Price",
+            hovermode="x unified"
+        )
+
+    def plot_trends(data, fig):
+        '''
+        Plots Upward trend and Downward trend
+        based on previous and current Close value.
+
+        Parameters:
+        data: Stock's Dataframe consisting on Close values
+        fig: Plotly's Figure object
+        '''
+        close = data["Close"].values
+
         for i in range(1, len(data)):
-            color = "green" if data["Close"].iloc[i] > data["Close"].iloc[i-1] else \
-                    "red" if data["Close"].iloc[i] < data["Close"].iloc[i-1] else "grey"
-            plt.plot(data.index[i-1:i+1], data["Close"].iloc[i-1:i+1], color=color, linewidth=1.8)
+            prev, current = close[i-1], close[i]
+            if current > prev:
+                color = "green"
+            elif current < prev:
+                color = "red"
+            else:
+                color = "grey"
 
-    def plot_candles(data, ax):
-        base = data.index[0].toordinal()
+            # Add each small segment as its own trace
+            fig.add_trace(go.Scatter(
+                x=data.index[i-1:i+1],
+                y=data["Close"].iloc[i-1:i+1],
+                mode="lines",
+                line=dict(color=color, width=1.8),
+                hoverinfo='skip',
+                showlegend=False   # hide legend spam
+            ))
+        
+        # Dummy data to show legend
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None],
+            mode="lines",
+            line=dict(color="green", width=2),
+            name="Uptrend"
+        ))
 
-        for idx, row in data.iterrows():
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None],
+            mode="lines",
+            line=dict(color="red", width=2),
+            name="Downtrend"
+        ))
 
-            x = idx.toordinal() - base
-            # Candle color
-            color = "green" if row.Close >= row.Open else "red"
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None],
+            mode="lines",
+            line=dict(color="grey", width=2),
+            name="Flat"
+        ))
 
-            # Candle body
-            lower = min(row.Open, row.Close)
-            height = abs(row.Close - row.Open)
-            ax.add_patch(
-                patches.Rectangle(
-                    (x - 0.4, lower),
-                    0.8,
-                    height if height > 0 else 0.01,
-                    facecolor=color,
-                    edgecolor=color
-                )
+        fig.update_layout(
+            title="Trend Line Chart",
+            xaxis_title="Date",
+            yaxis_title="Close Price",
+            hovermode="x unified",
+            legend=dict(
+                orientation="v"
             )
+        )
 
-            # Candle Wick
-            ax.vlines(x, row.Low, row.High, color=color, linewidth=2)
+    def plot_candles(data, fig):
 
-        ax.set_xlim(-1, len(data))
-        ax.set_xticks(range(0, len(data), max(1, len(data)//10)))
-        ax.set_xticklabels(data.index.strftime("%Y-%m-%d")[::max(1, len(data)//10)])
-        ax.autoscale_view()
+        # 1. Candlestick Chart (Row 1)
+        fig.add_trace(go.Candlestick(
+            x=data.index,
+            open=data['Open'],
+            high=data['High'],
+            low=data['Low'],
+            close=data['Close'],
+            name='Price',
+            showlegend=True
+        ))
+
+        fig.update_layout(
+            title="CandleStick Plot",
+            xaxis_title="Date",
+            yaxis_title="Close Price",
+            hovermode="x unified",
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
+        )
 
 
     if user_ticker:
-        # Getting 3 years of data from yfinance using 
-        # user given ticker
-        ticker = yf.Ticker(user_ticker)
-        data = ticker.history(period="3Y")
+        try:
+            # Getting 3 years of data from yfinance using 
+            # user given ticker
+            ticker = yf.Ticker(user_ticker)
+            data = ticker.history(period="3Y")
 
-        # Cleaning data
-        # Reindexing to fill in weekends
-        data.index = pd.to_datetime(data.index)
-        full_index = pd.date_range(start=data.index.min(), end=data.index.max(), freq='D')
-        data = data.reindex(full_index)
-        # Forward filling missing data
-        data = data.ffill()
+            # Cleaning data
+            # Reindexing to fill in weekends
+            data.index = pd.to_datetime(data.index)
+            full_index = pd.date_range(start=data.index.min(), end=data.index.max(), freq='D')
+            data = data.reindex(full_index)
+            # Forward filling missing data
+            data = data.ffill()
 
-        indicators_plot = {
-            "Bollinger Bands": plot_bollinger_bands,
-            "Trends": plot_trends,
-            "Candles": plot_candles
-        }
+            indicators_plot = {
+                "Bollinger Bands": plot_bollinger_bands,
+                "Trends": plot_trends,
+                "Candles": plot_candles
+            }
 
-        selected_options = st.multiselect(
-            "Select indicators to display:",
-            ["Bollinger Bands", "Trends", "Candles"]
-        )
+            selected_options = st.multiselect(
+                "Select indicators to display:",
+                ["Bollinger Bands", "Trends", "Candles"]
+            )
 
-        #fig = plt.figure(figsize=(10, 6))
-        fig, ax = plt.subplots(figsize=(14, 8))
-        if "Candles" not in selected_options:
-            ax.plot(data['Close'], label="Price", color='blue')
+            if "Candles" not in selected_options and "Trends" not in selected_options:
+                fig = px.line(data, x=data.index, y="Close", title=f"Closing Price of {user_ticker}", height=600)
+            else:
+                fig = go.Figure()
 
 
-        for option in selected_options:
-            if option in indicators_plot:
-                indicators_plot[option](data, ax)
+            for option in selected_options:
+                if option in indicators_plot:
+                    indicators_plot[option](data, fig)
 
-        
-        # Plotting closing price
-        plt.title(f"Closing price of {user_ticker}")
-        plt.legend()     
+            st.plotly_chart(fig, use_container_width=True)
 
-        # Turning static plot to interactive
-        fig_html = mpld3.fig_to_html(fig)
-        components.html(fig_html, height=1000, width=1000)
+        except Exception as e:
+            st.error(f"Ticker does not exist {e}")
         
 #------------------------------------END OF YUAN WEI PART-----------------------------------
 

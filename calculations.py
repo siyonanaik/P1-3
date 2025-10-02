@@ -233,7 +233,16 @@ plt.show()
 #------------------------------------START OF YUAN WEI PART----------------------------------
 def bollinger_bands(data, window=5, k=2):
     '''
-    Calculates Bollinger Bands for given price data/
+    Calculates Bollinger Bands for given price data
+
+    Parameters:
+    data: A stock's dataframe containing Close price
+    window: Bollinger Band lookback period / number of data points, Default = 5
+    k: Standard Deviation Value, Default = 2
+
+    Returns:
+    pandas.DataFrame consisting of SMA, UpperBand, LowerBand values
+
 
     '''
     prices = np.asarray(data['Close'])
