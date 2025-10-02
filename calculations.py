@@ -165,12 +165,6 @@ def calculate_average_true_range(tr_lst):
 
 
 #------------------------------------START OF WYNN PART--------------------------------------
-# Load data
-ticker = "NVDA"
-df = yf.download(ticker, start="2022-09-12", end="2025-09-12")
-
-# Reset index to keep "Date" as a column
-df.reset_index(inplace=True)
 
 # Max profit calculation
 def max_profit_with_days(prices, dates):
@@ -197,26 +191,7 @@ def max_profit_with_days(prices, dates):
     return profit, transactions
 
 
-prices = df["Close"].values
-dates = pd.to_datetime(df["Date"]).values  
 
-totalprofit, transactions = max_profit_with_days(prices, dates)
-roundedtotalprofit = round(float(totalprofit),2)
-
-print(f"Total Max Profit: {roundedtotalprofit}")
-print(f"Number of transactions: {len(transactions)}")
-
-transactions_df = pd.DataFrame(transactions)
-
-
-# Sorting
-transactions_df["Buy Date"] = pd.to_datetime(transactions_df["Buy Date"])
-transactions_df["Profit"] = transactions_df["Profit"].astype(float)
-
-# Find top 5 profits
-top5_df = transactions_df.sort_values(by="Profit", ascending=False).head(5)
-top5_df["Buy Date"] = pd.to_datetime(top5_df["Buy Date"])
-top5_df["Profit"] = top5_df["Profit"].astype(float)
 #------------------------------------END OF WYNN PART----------------------------------------
 
 
