@@ -668,8 +668,6 @@ elif dashboard_selection == "Max Profit Calculation":
         total_profit, transactions = max_profit_with_days(prices, dates)
         rounded_total_profit = round(float(total_profit),2)
 
-        print(f"Total Max Profit: {rounded_total_profit}")
-        print(f"Number of transactions: {len(transactions)}")
 
         transactions_df = pd.DataFrame(transactions)
 
