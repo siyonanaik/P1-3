@@ -7,6 +7,7 @@ import streamlit.components.v1 as components
 from datetime import datetime, timedelta
 from calculations import *
 from apihandler import *
+from helper import *
 import csv
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
@@ -745,10 +746,13 @@ elif dashboard_selection == "Trends Analysis":
         bands = bollinger_bands(data=data, window=window, k=k)
 
         # Closing price line
-        fig.add_trace(go.Scatter(
-            x=data.index, y=data['Close'],
-            name="Closing Price",
-            line=dict(color="blue")
+        fig.add_trace(go.Candlestick(
+            x=data.index, 
+            open=data['Open'],
+            close=data['Close'],
+            high=data['High'],
+            low=data['Low'],
+            name="Closing Price"
         ))
 
         # SMA
@@ -780,7 +784,8 @@ elif dashboard_selection == "Trends Analysis":
             title="Bollinger Bands",
             xaxis_title="Date",
             yaxis_title="Price($)",
-            hovermode="x unified"
+            hovermode="x unified",
+            xaxis_rangeslider_visible=False
         )
         return fig
 
@@ -910,13 +915,7 @@ elif dashboard_selection == "Trends Analysis":
             ticker = yf.Ticker(user_ticker)
             data = ticker.history(period="3Y")
 
-            # Cleaning data
-            # Reindexing to fill in weekends
-            data.index = pd.to_datetime(data.index)
-            full_index = pd.date_range(start=data.index.min(), end=data.index.max(), freq='D')
-            data = data.reindex(full_index)
-            # Forward filling missing data
-            data = data.ffill()
+            data = preprocess(data)
 
             indicators_plot = {
                 "Bollinger Bands": {"function": plot_bollinger_bands,
