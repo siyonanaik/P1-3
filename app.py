@@ -338,14 +338,19 @@ elif dashboard_selection == "SMA & EMA":
         fig_sma = go.Figure()
         fig_ema = go.Figure()
 
-        # Add closing price line to SMA chart
-        fig_sma.add_trace(go.Scatter(
+        # Add Closing Price as Candlestick to SMA chart
+        fig_sma.add_trace(go.Candlestick(
             x=full_stock_data.index,
-            y=close_prices2,
-            mode="lines",
-            name="Close Price",
-            line=dict(color="black", width=1)
+            open=full_stock_data["Open"],
+            high=full_stock_data["High"],
+            low=full_stock_data["Low"],
+            close=full_stock_data["Close"],
+            name="Close Price"
         ))
+
+        
+
+
 
         # Add SMAs
         fig_sma.add_trace(go.Scatter(
@@ -370,14 +375,16 @@ elif dashboard_selection == "SMA & EMA":
             line=dict(color="red", width=1.5)
         ))
 
-        # Add closing price line to EMA chart
-        fig_ema.add_trace(go.Scatter(
+        # Add Closing Price as Candlestick to EMA chart
+        fig_ema.add_trace(go.Candlestick(
             x=full_stock_data.index,
-            y=close_prices2,
-            mode="lines",
-            name="Close Price",
-            line=dict(color="black", width=1)
+            open=full_stock_data["Open"],
+            high=full_stock_data["High"],
+            low=full_stock_data["Low"],
+            close=full_stock_data["Close"],
+            name="Close Price"
         ))
+
 
         # Add EMAs
         for period, ema_series in ema_dict.items():
