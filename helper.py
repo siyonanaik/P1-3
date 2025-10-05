@@ -1,7 +1,18 @@
 import pandas as pd
 import numpy as np
 
-def preprocess(df):
+def preprocess(df: pd.DataFrame) -> pd.DataFrame:
+    '''
+    Takes in a dataframe and performs checks like data type check, duplicated dates check, chronological date check, 
+    validation check for high, low, open, close, negative values check, ffill then bfill null values for missing data 
+    on weekends and holidays.
+
+
+    Parameters:
+    df: pd.DataFrame
+
+    Returns: pd.DataFrame
+    '''
     # Ensure all correct data types
     try: 
         df.index = pd.to_datetime(df.index)
