@@ -16,20 +16,171 @@ import plotly.graph_objects as go
 
 #------------------------------------START OF THAW ZIN PART-------------------------------
 
-# --- SESSION STATE INITIALIZATION ---
-if 'stock_data_cache' not in st.session_state:
-    st.session_state['stock_data_cache'] = {} # Stores {ticker: 3Y_dataframe}
-if 'current_ticker' not in st.session_state:
-    st.session_state['current_ticker'] = ""
+# # --- SESSION STATE INITIALIZATION ---
+# if 'stock_data_cache' not in st.session_state:
+#     st.session_state['stock_data_cache'] = {} # Stores {ticker: 3Y_dataframe}
+# if 'current_ticker' not in st.session_state:
+#     st.session_state['current_ticker'] = ""
 
 
-if "chat_messages" not in st.session_state:
-    initial_message = """
-    Hello! I'm **FinSight** 🧠, your AI financial research and analysis assistant. I can help you understand stock data, technical indicators, and market trends.
+# if "chat_messages" not in st.session_state:
+#     initial_message = """
+#     Hello! I'm **FinSight** 🧠, your AI financial research and analysis assistant. I can help you understand stock data, technical indicators, and market trends.
 
-    Ask me about **Moving averages**, **Support/resistance**, **Relative Strength Index**or anything else related to technical analysis!
-    """
-    st.session_state["chat_messages"] = [{"role": "assistant", "content": initial_message}]
+#     Ask me about **Moving averages**, **Support/resistance**, **Relative Strength Index**or anything else related to technical analysis!
+#     """
+#     st.session_state["chat_messages"] = [{"role": "assistant", "content": initial_message}]
+
+# # Set up the page configuration
+# st.set_page_config(
+#     page_title="Financial Trend Analysis Dashboard",
+#     page_icon="📊",
+#     layout="wide",
+# )
+ 
+# # --- Dashboard UI (Frontend) ---
+
+# st.title("Financial Trend Analysis Dashboard")
+
+# st.markdown("""
+# Welcome to the P1-3's live & historical financial data analysis dashboard! This tool allows you
+# to analyze stock tickers and get AI-powered insights.
+# """)
+
+# # --- Sidebar Menu for Navigation ---
+# st.sidebar.title("Dashboard Menu")
+# dashboard_selection = st.sidebar.radio(
+#     "Select a dashboard view:",
+#     ("Ticker Input" , "Trends Analysis" , "Daily Returns", "SMA & EMA",  "RSI Visualization & Explanation", "Max Profit Calculation")
+# )
+
+
+# if dashboard_selection == "Ticker Input":
+#     st.markdown("---")
+#     st.header("Please input Stock Ticker To view Various Analysis")
+
+#     # Use session state to maintain the input value across reruns
+#     ticker_symbol_input = st.text_input(
+#         "Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", 
+#         value=st.session_state.current_ticker
+#     ).upper()
+    
+#     st.markdown("---")
+#     # --- FIN SIGHT CHAT ASSISTANT UI ---
+#     st.header("FinSight 💬")
+
+#     # 1. DISPLAY ALL MESSAGES FROM HISTORY
+#     # This loop renders all messages from previous runs.
+#     for message in st.session_state.chat_messages:
+#         with st.chat_message(message["role"]):
+#             st.markdown(message["content"])
+
+#     # 2. Handle new user input
+#     if prompt := st.chat_input("Ask about any technical analysis...", key="ticker_input_chat"):
+        
+#         # --- IMPROVEMENT START ---
+#         # A. Append user message to history immediately
+#         st.session_state.chat_messages.append({"role": "user", "content": prompt})
+        
+#         # B. EXPLICITLY DISPLAY THE NEW USER MESSAGE in the current run
+#         # This makes it appear instantly before the API call starts.
+#         with st.chat_message("user"):
+#             st.markdown(prompt)
+#         # --- IMPROVEMENT END ---
+        
+#         # 3. Get response from LLM
+#         with st.chat_message("assistant"):
+#             with st.spinner("Assistant is thinking..."):
+#                 try:
+#                     # Prepare the full conversation context for the LLM (Universalized prompt)
+#                     full_prompt = "You are an expert technical analyst. Answer the user's question concisely. User: " + prompt
+                    
+#                     # Blocking API call happens here
+#                     llm_response = call_huggingface_api(full_prompt)
+                    
+#                     # Display and append the response
+#                     st.markdown(llm_response)
+#                     st.session_state.chat_messages.append({"role": "assistant", "content": llm_response})
+                    
+#                 except Exception as e:
+#                     error_message = "Sorry, I can't reach the technical analysis server right now. Please try again later."
+#                     st.error(error_message)
+#                     # Append the error message to the chat history
+#                     st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
+            
+#             # The st.rerun() is no longer strictly necessary if the user message is displayed immediately,
+#             # but we keep it to ensure the latest state (especially after an error) is clean.
+#             st.rerun() 
+
+#     # --- Ticker Input and Data Fetching Logic (Original Code) ---
+    
+#     # Only proceed if the input has changed or is not empty
+#     if ticker_symbol_input and ticker_symbol_input != st.session_state.current_ticker:
+#         st.session_state.current_ticker = ticker_symbol_input # Update current ticker
+
+#         # --- DATA FETCHING LOGIC (Max 3Y range) ---
+#         MAX_TIME_RANGE = timedelta(days=365 * 3) # 3 Years
+#         end_date = datetime.now()
+#         start_date = end_date - MAX_TIME_RANGE
+#         ticker = st.session_state.current_ticker
+        
+#         try:
+#             with st.spinner(f"Fetching **3 years** of historical data for {ticker}..."):
+#                 # Assume yf (yfinance) and datetime/timedelta are imported
+#                 # Fetch data up to the maximum required range (3Y)
+#                 stock_data_3y = yf.download(ticker, start=start_date, end=end_date, progress=False)
+
+#             if stock_data_3y.empty:
+#                 st.error(f"Could not find data for ticker: {ticker}. Please check the symbol and try again.")
+#                 st.session_state.current_ticker = "" # Reset ticker on error
+#                 st.session_state.stock_data_cache.pop(ticker, None) # Remove from cache
+#             else:
+#                 # Flatten columns if multi-level
+#                 if isinstance(stock_data_3y.columns, pd.MultiIndex):
+#                     # Assume pd (pandas) is imported
+#                     stock_data_3y.columns = stock_data_3y.columns.get_level_values(0)
+                
+#                 # Store the full 3Y data in the cache under the ticker key
+#                 st.session_state.stock_data_cache[ticker] = stock_data_3y
+#                 st.success(f"Data for **{ticker}** (3Y range) fetched and cached successfully!")
+                
+#         except Exception as e:
+#             st.error(f"An error occurred during data fetching for {ticker}: {e}")
+#             st.session_state.current_ticker = "" # Reset ticker on error
+#             st.session_state.stock_data_cache.pop(ticker, None) # Remove from cache
+#         st.session_state.current_ticker = ticker_symbol_input # Update current ticker
+
+#         # --- DATA FETCHING LOGIC (Max 3Y range) ---
+#         MAX_TIME_RANGE = timedelta(days=365 * 3) # 3 Years
+#         end_date = datetime.now()
+#         start_date = end_date - MAX_TIME_RANGE
+#         ticker = st.session_state.current_ticker
+        
+#         try:
+#             with st.spinner(f"Fetching **3 years** of historical data for {ticker}..."):
+#                 # Assume yf (yfinance) and datetime/timedelta are imported
+#                 # Fetch data up to the maximum required range (3Y)
+#                 stock_data_3y = yf.download(ticker, start=start_date, end=end_date, progress=False)
+
+#             if stock_data_3y.empty:
+#                 st.error(f"Could not find data for ticker: {ticker}. Please check the symbol and try again.")
+#                 st.session_state.current_ticker = "" # Reset ticker on error
+#                 st.session_state.stock_data_cache.pop(ticker, None) # Remove from cache
+#             else:
+#                 # Flatten columns if multi-level
+#                 if isinstance(stock_data_3y.columns, pd.MultiIndex):
+#                     # Assume pd (pandas) is imported
+#                     stock_data_3y.columns = stock_data_3y.columns.get_level_values(0)
+                
+#                 # Store the full 3Y data in the cache under the ticker key
+#                 st.session_state.stock_data_cache[ticker] = stock_data_3y
+#                 st.success(f"Data for **{ticker}** (3Y range) fetched and cached successfully!")
+                
+#         except Exception as e:
+#             st.error(f"An error occurred during data fetching for {ticker}: {e}")
+#             st.session_state.current_ticker = "" # Reset ticker on error
+#             st.session_state.stock_data_cache.pop(ticker, None) # Remove from cache
+# # --- Stock Price and RSI Dashboard Block ---
 
 # Set up the page configuration
 st.set_page_config(
@@ -37,7 +188,7 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
 )
- 
+
 # --- Dashboard UI (Frontend) ---
 
 st.title("Financial Trend Analysis Dashboard")
@@ -51,257 +202,170 @@ to analyze stock tickers and get AI-powered insights.
 st.sidebar.title("Dashboard Menu")
 dashboard_selection = st.sidebar.radio(
     "Select a dashboard view:",
-    ("Ticker Input" , "Trends Analysis" , "Daily Returns", "SMA & EMA",  "RSI Visualization & Explanation", "Max Profit Calculation")
+    ("RSI Visualization & Explanation", "SMA & EMA", "Daily Returns", "Max Profit Calculation", "Trends Analysis")
 )
 
 
-if dashboard_selection == "Ticker Input":
+if dashboard_selection == "RSI Visualization & Explanation":
     st.markdown("---")
-    st.header("Please input Stock Ticker To view Various Analysis")
-
-    # Use session state to maintain the input value across reruns
-    ticker_symbol_input = st.text_input(
-        "Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", 
-        value=st.session_state.current_ticker
-    ).upper()
     
-    st.markdown("---")
-    # --- FIN SIGHT CHAT ASSISTANT UI ---
-    st.header("FinSight 💬")
+    # ticker_symbol = st.session_state.current_ticker 
+    ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
 
-    # 1. DISPLAY ALL MESSAGES FROM HISTORY
-    # This loop renders all messages from previous runs.
-    for message in st.session_state.chat_messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # 2. Handle new user input
-    if prompt := st.chat_input("Ask about any technical analysis...", key="ticker_input_chat"):
-        
-        # --- IMPROVEMENT START ---
-        # A. Append user message to history immediately
-        st.session_state.chat_messages.append({"role": "user", "content": prompt})
-        
-        # B. EXPLICITLY DISPLAY THE NEW USER MESSAGE in the current run
-        # This makes it appear instantly before the API call starts.
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        # --- IMPROVEMENT END ---
-        
-        # 3. Get response from LLM
-        with st.chat_message("assistant"):
-            with st.spinner("Assistant is thinking..."):
-                try:
-                    # Prepare the full conversation context for the LLM (Universalized prompt)
-                    full_prompt = "You are an expert technical analyst. Answer the user's question concisely. User: " + prompt
-                    
-                    # Blocking API call happens here
-                    llm_response = call_huggingface_api(full_prompt)
-                    
-                    # Display and append the response
-                    st.markdown(llm_response)
-                    st.session_state.chat_messages.append({"role": "assistant", "content": llm_response})
-                    
-                except Exception as e:
-                    error_message = "Sorry, I can't reach the technical analysis server right now. Please try again later."
-                    st.error(error_message)
-                    # Append the error message to the chat history
-                    st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-            
-            # The st.rerun() is no longer strictly necessary if the user message is displayed immediately,
-            # but we keep it to ensure the latest state (especially after an error) is clean.
-            st.rerun() 
-
-    # --- Ticker Input and Data Fetching Logic (Original Code) ---
-    
-    # Only proceed if the input has changed or is not empty
-    if ticker_symbol_input and ticker_symbol_input != st.session_state.current_ticker:
-        st.session_state.current_ticker = ticker_symbol_input # Update current ticker
-
-        # --- DATA FETCHING LOGIC (Max 3Y range) ---
-        MAX_TIME_RANGE = timedelta(days=365 * 3) # 3 Years
-        end_date = datetime.now()
-        start_date = end_date - MAX_TIME_RANGE
-        ticker = st.session_state.current_ticker
-        
+    # if not ticker_symbol:
+    #     st.warning("Please enter a stock ticker in the **Ticker Input** section first.")
+    # elif ticker_symbol not in st.session_state.stock_data_cache:
+    #     st.warning(f"No 3-year data found for **{ticker_symbol}**. Please re-enter the ticker in the **Ticker Input** section.")
+    if ticker_symbol:
         try:
-            with st.spinner(f"Fetching **3 years** of historical data for {ticker}..."):
-                # Assume yf (yfinance) and datetime/timedelta are imported
-                # Fetch data up to the maximum required range (3Y)
-                stock_data_3y = yf.download(ticker, start=start_date, end=end_date, progress=False)
+            # # --- DATA RETRIEVAL ---
+            # full_stock_data = st.session_state.stock_data_cache[ticker_symbol]
 
-            if stock_data_3y.empty:
-                st.error(f"Could not find data for ticker: {ticker}. Please check the symbol and try again.")
-                st.session_state.current_ticker = "" # Reset ticker on error
-                st.session_state.stock_data_cache.pop(ticker, None) # Remove from cache
-            else:
-                # Flatten columns if multi-level
-                if isinstance(stock_data_3y.columns, pd.MultiIndex):
-                    # Assume pd (pandas) is imported
-                    stock_data_3y.columns = stock_data_3y.columns.get_level_values(0)
-                
-                # Store the full 3Y data in the cache under the ticker key
-                st.session_state.stock_data_cache[ticker] = stock_data_3y
-                st.success(f"Data for **{ticker}** (3Y range) fetched and cached successfully!")
-                
-        except Exception as e:
-            st.error(f"An error occurred during data fetching for {ticker}: {e}")
-            st.session_state.current_ticker = "" # Reset ticker on error
-            st.session_state.stock_data_cache.pop(ticker, None) # Remove from cache
-        st.session_state.current_ticker = ticker_symbol_input # Update current ticker
+            TIME_RANGES = {
+                "1M": timedelta(days=30), 
+                "3M": timedelta(days=90), 
+                "6M": timedelta(days=180),
+                "1Y": timedelta(days=365),
+                "3Y": timedelta(days=365 * 3), 
+            }
 
-        # --- DATA FETCHING LOGIC (Max 3Y range) ---
-        MAX_TIME_RANGE = timedelta(days=365 * 3) # 3 Years
-        end_date = datetime.now()
-        start_date = end_date - MAX_TIME_RANGE
-        ticker = st.session_state.current_ticker
-        
-        try:
-            with st.spinner(f"Fetching **3 years** of historical data for {ticker}..."):
-                # Assume yf (yfinance) and datetime/timedelta are imported
-                # Fetch data up to the maximum required range (3Y)
-                stock_data_3y = yf.download(ticker, start=start_date, end=end_date, progress=False)
-
-            if stock_data_3y.empty:
-                st.error(f"Could not find data for ticker: {ticker}. Please check the symbol and try again.")
-                st.session_state.current_ticker = "" # Reset ticker on error
-                st.session_state.stock_data_cache.pop(ticker, None) # Remove from cache
-            else:
-                # Flatten columns if multi-level
-                if isinstance(stock_data_3y.columns, pd.MultiIndex):
-                    # Assume pd (pandas) is imported
-                    stock_data_3y.columns = stock_data_3y.columns.get_level_values(0)
-                
-                # Store the full 3Y data in the cache under the ticker key
-                st.session_state.stock_data_cache[ticker] = stock_data_3y
-                st.success(f"Data for **{ticker}** (3Y range) fetched and cached successfully!")
-                
-        except Exception as e:
-            st.error(f"An error occurred during data fetching for {ticker}: {e}")
-            st.session_state.current_ticker = "" # Reset ticker on error
-            st.session_state.stock_data_cache.pop(ticker, None) # Remove from cache
-# --- Stock Price and RSI Dashboard Block ---
-
-elif dashboard_selection == "RSI Visualization & Explanation":
-    st.markdown("---")
-    
-    ticker_symbol = st.session_state.current_ticker 
-
-    if not ticker_symbol:
-        st.warning("Please enter a stock ticker in the **Ticker Input** section first.")
-    elif ticker_symbol not in st.session_state.stock_data_cache:
-        st.warning(f"No 3-year data found for **{ticker_symbol}**. Please re-enter the ticker in the **Ticker Input** section.")
-    else:
-        # --- DATA RETRIEVAL ---
-        full_stock_data = st.session_state.stock_data_cache[ticker_symbol]
-
-        TIME_RANGES = {
-            "1M": timedelta(days=30), 
-            "3M": timedelta(days=90), 
-            "6M": timedelta(days=180),
-            "1Y": timedelta(days=365),
-            "3Y": timedelta(days=365 * 3), 
-        }
-        
-        # 1. Initialize session state variable for the widget's value (using the key name)
-        # This setup is correct and provides the default/initial value
-        if 'current_range_key' not in st.session_state:
-            st.session_state.current_range_key = "1Y" 
-            
-        # Ensure the stored value is valid
-        if st.session_state.current_range_key not in TIME_RANGES:
-             st.session_state.current_range_key = "1Y"
-
-
-        # --- TAB DEFINITION ---
-        tab1, tab2, tab3 = st.tabs(["📊 RSI Indicator", "💡 Indicator Explanation", "📰 Stock News Feed"])
-        
-        # --- WIDGET PLACEMENT (INSIDE TAB 1 ONLY) ---
-        with tab1:
-            # 2. Place the st.radio widget inside Tab 1
-            st.radio( # <-- FIX: Removed the redundant 'index' argument
-                "Select Time Range for Data Analysis:",
+            selected_range_label = st.radio(
+                "Select Time Range:",
                 options=list(TIME_RANGES.keys()),
-                horizontal=True,
-                key='current_range_key' # Streamlit will use st.session_state.current_range_key as the initial value
+                index=4, # Default to 1Y
+                horizontal=True
             )
+            # Fetch data based on user selected range
+            end_date = datetime.now()
             
-        # --- DATA FILTERING LOGIC (Using the value captured from session state) ---
-        current_range_label = st.session_state.current_range_key 
-        range_delta = TIME_RANGES.get(current_range_label, timedelta(days=365))
-        start_date_limit = datetime.now() - range_delta
-        
-        # Filter the full data for the selected range 
-        stock_data = full_stock_data[full_stock_data.index >= start_date_limit.strftime('%Y-%m-%d')]
-
-        if stock_data.empty:
-             st.error(f"No data available for the selected range: {current_range_label}. Try selecting a larger range.")
-        else:
-
-            # --- FIXED RSI PERIOD LOGIC ---
-            fixed_rsi_period = 14
+            # Calculate start date based on selected label
+            range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
+            start_date = end_date - range_delta
             
-            # --- REMAINDER OF TAB 1 CONTENT (Continuation) ---
-            with tab1:
-                # --- RSI Calculation and Plot ---
-                st.subheader(f"Relative Strength Index (RSI) for {ticker_symbol}")
+            with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
+                full_stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
+            
+            if full_stock_data.empty:
+                st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
+            else:
+                # Flatten columns if multi-level
+                if isinstance(full_stock_data.columns, pd.MultiIndex):
+                    full_stock_data.columns = full_stock_data.columns.get_level_values(0)
+            
+            # # 1. Initialize session state variable for the widget's value (using the key name)
+            # # This setup is correct and provides the default/initial value
+            # if 'current_range_key' not in st.session_state:
+            #     st.session_state.current_range_key = "1Y" 
                 
-                # Calculate RSI on the *filtered* data using the fixed 14-day period
-                stock_data['RSI'] = calculate_rsi(stock_data, periods=fixed_rsi_period) 
+            # # Ensure the stored value is valid
+            # if st.session_state.current_range_key not in TIME_RANGES:
+            #      st.session_state.current_range_key = "1Y"
+
+                # Stock Data Handling
+                data = {
+                    'Date': full_stock_data.index,
+                    'Open': full_stock_data['Open'],
+                    'High': full_stock_data['High'],
+                    'Low': full_stock_data['Low'],
+                    'Close': full_stock_data['Close'],
+                    'Volume': full_stock_data['Volume'],
+                }
+
+                df = pd.DataFrame(data)
+                df = preprocess(df)
+
+
+                # --- TAB DEFINITION ---
+                tab1, tab2, tab3 = st.tabs(["📊 RSI Indicator", "💡 Indicator Explanation", "📰 Stock News Feed"])
                 
-                fig_rsi = px.line(
-                    stock_data.dropna(), 
-                    x=stock_data.dropna().index,
-                    y='RSI',
-                    title=f"RSI Trend (Period {fixed_rsi_period} Days) over Last {current_range_label}", 
-                    labels={'RSI': 'Value'},
-                )
-                fig_rsi.add_hline(y=70, line_dash="dash", line_color="red", annotation_text="Overbought")
-                fig_rsi.add_hline(y=30, line_dash="dash", line_color="green", annotation_text="Oversold")
-                fig_rsi.update_yaxes(range=[0, 100], title="RSI Value")
-                st.plotly_chart(fig_rsi, use_container_width=True)
+                # --- WIDGET PLACEMENT (INSIDE TAB 1 ONLY) ---
+                with tab1:
+                    # 2. Place the st.radio widget inside Tab 1
+                    st.radio( # <-- FIX: Removed the redundant 'index' argument
+                        "Select Time Range for Data Analysis:",
+                        options=list(TIME_RANGES.keys()),
+                        horizontal=True,
+                        key='current_range_key' # Streamlit will use st.session_state.current_range_key as the initial value
+                    )
+                    
+                # --- DATA FILTERING LOGIC (Using the value captured from session state) ---
+                current_range_label = st.session_state.current_range_key 
+                range_delta = TIME_RANGES.get(current_range_label, timedelta(days=365))
+                start_date_limit = datetime.now() - range_delta
+                
+                # Filter the full data for the selected range 
+                stock_data = full_stock_data[full_stock_data.index >= start_date_limit.strftime('%Y-%m-%d')]
 
-
-            with tab2:
-                st.header("What is the Relative Strength Index (RSI)?")
-                with st.spinner("Generating RSI explanation from Language Model..."):
-                    try:
-                        rsi_explanation = call_huggingface_api(
-                            "What is the Relative Strength Index (RSI)? Explain it simply for a beginner."
-                        )
-                        st.info(rsi_explanation)
-                    except Exception as e:
-                        st.info(
-                            """The **Relative Strength Index (RSI)** is a popular momentum indicator used in trading.         
-                            \nThink of it like a *speedometer for price movements*. It shows whether a stock or asset has been going up or down **too quickly**.  
-                            \n How it works:
-                            - RSI gives a value between **0 and 100**.  
-                            - **Above 70 → Overbought:** Price may have climbed too fast, and a pullback is possible.  
-                            - **Below 30 → Oversold:** Price may have dropped too fast, and a rebound is possible.  
-                            \n Key Notes:
-                            - The most common calculation uses a **14-day lookback period**.  
-                            - RSI doesn’t predict the future, but it helps traders spot when prices might be overheating or undervalued.  
-                            """
-                        )
-
-            
-            with tab3:
-                # ... (News feed content) ...
-                st.header(f"Recent News for {ticker_symbol}")
-                with st.spinner(f"Fetching recent news for {ticker_symbol}..."):
-                    stock_news = fetch_latest_news(ticker_symbol, limit=8)
-                if stock_news:
-                    st.markdown("Click on a headline to open the full article.")
-                    st.markdown("---")
-                    for i, news_item in enumerate(stock_news):
-                        col_index, col_source = st.columns([0.1, 0.9])
-                        col_index.markdown(f"**{i+1}.**")
-                        col_source.markdown(f"*{news_item['Source']}*")
-                        with st.expander(f"**{news_item['Title']}**"):
-                            st.markdown(f"Read full article: [**{news_item['URL']}**]({news_item['URL']})")
-                        st.markdown("---")
+                if stock_data.empty:
+                    st.error(f"No data available for the selected range: {current_range_label}. Try selecting a larger range.")
                 else:
-                    st.warning("No recent news articles found for this ticker. Try a larger company or check the symbol.")
+
+                    # --- FIXED RSI PERIOD LOGIC ---
+                    fixed_rsi_period = 14
+                    
+                    # --- REMAINDER OF TAB 1 CONTENT (Continuation) ---
+                    with tab1:
+                        # --- RSI Calculation and Plot ---
+                        st.subheader(f"Relative Strength Index (RSI) for {ticker_symbol}")
+                        
+                        # Calculate RSI on the *filtered* data using the fixed 14-day period
+                        stock_data['RSI'] = calculate_rsi(stock_data, periods=fixed_rsi_period) 
+                        
+                        fig_rsi = px.line(
+                            stock_data.dropna(), 
+                            x=stock_data.dropna().index,
+                            y='RSI',
+                            title=f"RSI Trend (Period {fixed_rsi_period} Days) over Last {current_range_label}", 
+                            labels={'RSI': 'Value'},
+                        )
+                        fig_rsi.add_hline(y=70, line_dash="dash", line_color="red", annotation_text="Overbought")
+                        fig_rsi.add_hline(y=30, line_dash="dash", line_color="green", annotation_text="Oversold")
+                        fig_rsi.update_yaxes(range=[0, 100], title="RSI Value")
+                        st.plotly_chart(fig_rsi, use_container_width=True)
+
+
+                    with tab2:
+                        st.header("What is the Relative Strength Index (RSI)?")
+                        with st.spinner("Generating RSI explanation from Language Model..."):
+                            try:
+                                rsi_explanation = call_huggingface_api(
+                                    "What is the Relative Strength Index (RSI)? Explain it simply for a beginner."
+                                )
+                                st.info(rsi_explanation)
+                            except Exception as e:
+                                st.info(
+                                    """The **Relative Strength Index (RSI)** is a popular momentum indicator used in trading.         
+                                    \nThink of it like a *speedometer for price movements*. It shows whether a stock or asset has been going up or down **too quickly**.  
+                                    \n How it works:
+                                    - RSI gives a value between **0 and 100**.  
+                                    - **Above 70 → Overbought:** Price may have climbed too fast, and a pullback is possible.  
+                                    - **Below 30 → Oversold:** Price may have dropped too fast, and a rebound is possible.  
+                                    \n Key Notes:
+                                    - The most common calculation uses a **14-day lookback period**.  
+                                    - RSI doesn’t predict the future, but it helps traders spot when prices might be overheating or undervalued.  
+                                    """
+                                )
+
+                    
+                    with tab3:
+                        # ... (News feed content) ...
+                        st.header(f"Recent News for {ticker_symbol}")
+                        with st.spinner(f"Fetching recent news for {ticker_symbol}..."):
+                            stock_news = fetch_latest_news(ticker_symbol, limit=8)
+                        if stock_news:
+                            st.markdown("Click on a headline to open the full article.")
+                            st.markdown("---")
+                            for i, news_item in enumerate(stock_news):
+                                col_index, col_source = st.columns([0.1, 0.9])
+                                col_index.markdown(f"**{i+1}.**")
+                                col_source.markdown(f"*{news_item['Source']}*")
+                                with st.expander(f"**{news_item['Title']}**"):
+                                    st.markdown(f"Read full article: [**{news_item['URL']}**]({news_item['URL']})")
+                                st.markdown("---")
+                        else:
+                            st.warning("No recent news articles found for this ticker. Try a larger company or check the symbol.")
+        except Exception as e:
+            st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
             # --- END: TABBED LAYOUT ---
 #------------------------------------END OF THAW ZIN PART------------------------------------
             
@@ -312,6 +376,61 @@ elif dashboard_selection == "SMA & EMA":
     st.markdown("---") 
     st.header("Simple Moving Average (SMA) & Exponential Moving Average (EMA)")
     st.subheader("NVIDIA Stock Price with SMA (Periods: 50, 100, 200)")
+
+    ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
+
+    # --- NEW TIME RANGE SELECTION LOGIC ---
+    TIME_RANGES = {
+        "1W": timedelta(weeks=1),
+        "1M": timedelta(days=30),      # Approximation
+        "3M": timedelta(days=90),      # Approximation
+        "1Y": timedelta(days=365),
+        "3Y": timedelta(days=365 * 3), # Approximation
+    }
+
+    selected_range_label = st.radio(
+        "Select Time Range:",
+        options=list(TIME_RANGES.keys()),
+        index=3, # Default to 1Y
+        horizontal=True
+    )
+
+    if ticker_symbol:
+        try:
+            # Fetch data based on user selected range
+            end_date = datetime.now()
+            
+            # Calculate start date based on selected label
+            range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
+            start_date = end_date - range_delta
+            
+            with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
+                stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
+            
+            if stock_data.empty:
+                st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
+            else:
+                # Flatten columns if multi-level
+                if isinstance(stock_data.columns, pd.MultiIndex):
+                    stock_data.columns = stock_data.columns.get_level_values(0)
+
+                # Stock Data Handling
+                data = {
+                    'Date': stock_data.index,
+                    'Open': stock_data['Open'],
+                    'High': stock_data['High'],
+                    'Low': stock_data['Low'],
+                    'Close': stock_data['Close'],
+                    'Volume': stock_data['Volume'],
+                }
+
+                df = pd.DataFrame(data)
+                df = preprocess(df)
+
+                # REST OF THE CODE GOES HERE ----------------------------------------------------------------------------------------------
+
+        except Exception as e:
+            st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
 
     # ---- Load dataset manually ----
     file_path = 'nvidia_cleaned.csv'
@@ -505,6 +624,7 @@ elif dashboard_selection == "Daily Returns":
                 }
 
                 df = pd.DataFrame(data)
+                df = preprocess(df)
 
                 # --- Close and Close+Atr and ATR Section (Current Ticker) ---
                 st.subheader(f"Average True Range (ATR) Analysis for {ticker_symbol}")
@@ -617,50 +737,105 @@ elif dashboard_selection == "Max Profit Calculation":
     st.markdown("---")
     st.header("Max Profit Calculation Dashboard")
     
-    #Stock Ticker Selection
-    ticker = st.text_input("Enter Stock Ticker Symbol").upper()
+    # #Stock Ticker Selection
+    # ticker = st.text_input("Enter Stock Ticker Symbol").upper()
 
-    if not ticker:
-        st.warning("Please enter a valid stock ticker symbol")
-        st.stop()
+    # if not ticker:
+    #     st.warning("Please enter a valid stock ticker symbol")
+    #     st.stop()
 
-    #Stock Time Period Selection
-    period_options = {
-        "1 Week": 7,
-        "1 Month": 30,
-        "3 Months": 90,
-        "6 Months": 180,
-        "1 Year": 365,
-        "2 Years": 365*2,
-        "3 Years": 365*3
+    # #Stock Time Period Selection
+    # period_options = {
+    #     "1 Week": 7,
+    #     "1 Month": 30,
+    #     "3 Months": 90,
+    #     "6 Months": 180,
+    #     "1 Year": 365,
+    #     "2 Years": 365*2,
+    #     "3 Years": 365*3
+    # }
+
+    # selected_period = st.selectbox(
+    #     "Select Time Period",
+    #     list(period_options.keys()),
+    #     index=4  # Default is 1 Year
+    # )
+
+    # # Calculate Date Range
+    # if period_options[selected_period]:
+    #     end_date = datetime.now()
+    #     start_date = end_date - timedelta(days=period_options[selected_period])
+
+    # # Download Stock Data
+    # with st.spinner(f"Fetching {ticker} data..."):
+    #     try:
+    #         df = yf.download(ticker, start=start_date, end=end_date, progress=False)
+            
+    #         if df.empty:
+    #             st.error(f"No data available for {ticker} in selected period")
+    #             st.stop()
+                
+    #         # Reset Index To Keep "Date" As A Column
+    #         df.reset_index(inplace=True)
+            
+    #     except Exception as e:
+    #         st.error(f"Error downloading data: {str(e)}")
+    #         st.stop()
+
+    ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
+
+    # --- NEW TIME RANGE SELECTION LOGIC ---
+    TIME_RANGES = {
+        "1W": timedelta(weeks=1),
+        "1M": timedelta(days=30),      # Approximation
+        "3M": timedelta(days=90),      # Approximation
+        "1Y": timedelta(days=365),
+        "3Y": timedelta(days=365 * 3), # Approximation
     }
 
-    selected_period = st.selectbox(
-        "Select Time Period",
-        list(period_options.keys()),
-        index=4  # Default is 1 Year
+    selected_range_label = st.radio(
+        "Select Time Range:",
+        options=list(TIME_RANGES.keys()),
+        index=3, # Default to 1Y
+        horizontal=True
     )
 
-    # Calculate Date Range
-    if period_options[selected_period]:
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=period_options[selected_period])
-
-    # Download Stock Data
-    with st.spinner(f"Fetching {ticker} data..."):
+    if ticker_symbol:
         try:
-            df = yf.download(ticker, start=start_date, end=end_date, progress=False)
+            # Fetch data based on user selected range
+            end_date = datetime.now()
             
-            if df.empty:
-                st.error(f"No data available for {ticker} in selected period")
-                st.stop()
-                
-            # Reset Index To Keep "Date" As A Column
-            df.reset_index(inplace=True)
+            # Calculate start date based on selected label
+            range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
+            start_date = end_date - range_delta
             
+            with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
+                stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
+            
+            if stock_data.empty:
+                st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
+            else:
+                # Flatten columns if multi-level
+                if isinstance(stock_data.columns, pd.MultiIndex):
+                    stock_data.columns = stock_data.columns.get_level_values(0)
+
+                # Stock Data Handling
+                data = {
+                    'Date': stock_data.index,
+                    'Open': stock_data['Open'],
+                    'High': stock_data['High'],
+                    'Low': stock_data['Low'],
+                    'Close': stock_data['Close'],
+                    'Volume': stock_data['Volume'],
+                }
+
+                df = pd.DataFrame(data)
+                df = preprocess(df)
+
+                # REST OF THE CODE GOES HERE ----------------------------------------------------------------------------------------------
+
         except Exception as e:
-            st.error(f"Error downloading data: {str(e)}")
-            st.stop()
+            st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
 
         # Sorting Transactions
         prices = df["Close"].values
@@ -726,7 +901,62 @@ elif dashboard_selection == "Trends Analysis":
     st.markdown("---")
     st.header("Trends Analysis Dashboard")
 
-    user_ticker = st.text_input("Enter a Ticker Symbol: (e.g. AAPL, GOOG ...)").upper()
+    # user_ticker = st.text_input("Enter a Ticker Symbol: (e.g. AAPL, GOOG ...)").upper()
+    ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
+
+    # --- NEW TIME RANGE SELECTION LOGIC ---
+    TIME_RANGES = {
+        "1W": timedelta(weeks=1),
+        "1M": timedelta(days=30),      # Approximation
+        "3M": timedelta(days=90),      # Approximation
+        "1Y": timedelta(days=365),
+        "3Y": timedelta(days=365 * 3), # Approximation
+    }
+
+    selected_range_label = st.radio(
+        "Select Time Range:",
+        options=list(TIME_RANGES.keys()),
+        index=3, # Default to 1Y
+        horizontal=True
+    )
+
+    if ticker_symbol:
+        try:
+            # Fetch data based on user selected range
+            end_date = datetime.now()
+            
+            # Calculate start date based on selected label
+            range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
+            start_date = end_date - range_delta
+            
+            with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
+                stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
+            
+            if stock_data.empty:
+                st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
+            else:
+                # Flatten columns if multi-level
+                if isinstance(stock_data.columns, pd.MultiIndex):
+                    stock_data.columns = stock_data.columns.get_level_values(0)
+
+                # Stock Data Handling
+                data = {
+                    'Date': stock_data.index,
+                    'Open': stock_data['Open'],
+                    'High': stock_data['High'],
+                    'Low': stock_data['Low'],
+                    'Close': stock_data['Close'],
+                    'Volume': stock_data['Volume'],
+                }
+
+                df = pd.DataFrame(data)
+                df = preprocess(df)
+
+                # REST OF THE CODE GOES HERE ----------------------------------------------------------------------------------------------
+
+        except Exception as e:
+            st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
+
 
     def plot_bollinger_bands(data, fig):
         '''
@@ -888,7 +1118,7 @@ elif dashboard_selection == "Trends Analysis":
 
         # Update layout for a cleaner financial look
         new_fig.update_layout(
-            title_text=f"Historical Price and Volume Analysis for {user_ticker}",
+            title_text=f"Historical Price and Volume Analysis for {ticker_symbol}",
             xaxis_rangeslider_visible=False, # Hide the main range slider
             xaxis2_title="Date",
             yaxis_title="Price ($)",
@@ -906,11 +1136,11 @@ elif dashboard_selection == "Trends Analysis":
         
 
 
-    if user_ticker:
+    if ticker_symbol:
         try:
             # Getting 3 years of data from yfinance using 
             # user given ticker
-            ticker = yf.Ticker(user_ticker)
+            ticker = yf.Ticker(ticker_symbol)
             data = ticker.history(period="3Y")
 
             data = preprocess(data)
@@ -943,7 +1173,7 @@ elif dashboard_selection == "Trends Analysis":
             )
 
             if "Candles" not in selected_options and "Price Trends" not in selected_options:
-                fig = px.line(data, x=data.index, y="Close", title=f"Closing Price of {user_ticker}", height=600)
+                fig = px.line(data, x=data.index, y="Close", title=f"Closing Price of {ticker_symbol}", height=600)
                 fig.update_xaxes(
                     showspikes=True,
                     spikemode="across",
