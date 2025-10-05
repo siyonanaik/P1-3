@@ -962,7 +962,6 @@ elif dashboard_selection == "Trends Analysis":
     st.markdown("---")
     st.header("Trends Analysis Dashboard")
 
-    # user_ticker = st.text_input("Enter a Ticker Symbol: (e.g. AAPL, GOOG ...)").upper()
     ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
 
     # --- NEW TIME RANGE SELECTION LOGIC ---
@@ -981,52 +980,16 @@ elif dashboard_selection == "Trends Analysis":
         horizontal=True
     )
 
-    if ticker_symbol:
-        try:
-            # Fetch data based on user selected range
-            end_date = datetime.now()
-            
-            # Calculate start date based on selected label
-            range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
-            start_date = end_date - range_delta
-            
-            with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
-                stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
-            
-            if stock_data.empty:
-                st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
-            else:
-                # Flatten columns if multi-level
-                if isinstance(stock_data.columns, pd.MultiIndex):
-                    stock_data.columns = stock_data.columns.get_level_values(0)
-
-                # Stock Data Handling
-                data = {
-                    'Date': stock_data.index,
-                    'Open': stock_data['Open'],
-                    'High': stock_data['High'],
-                    'Low': stock_data['Low'],
-                    'Close': stock_data['Close'],
-                    'Volume': stock_data['Volume'],
-                }
-
-                df = pd.DataFrame(data)
-                df = preprocess(df)
-
-                # REST OF THE CODE GOES HERE ----------------------------------------------------------------------------------------------
-
-        except Exception as e:
-            st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
-
-
-    def plot_bollinger_bands(data, fig):
+    def plot_bollinger_bands(data: pd.DataFrame, fig: go.Figure) -> go.Figure:
         '''
         Plots Bollinger Bands on plotly chart after
         running bollinger_bands from calculations.py
 
         Parameters:
         data: Stock's Dataframe consisting on Close values
-        fig: Plotly's Figure object
+        fig: Plotly.graph_objects Figure object
+
+        Returns: Plotly.graph_objects Figure Object
         '''
         window = st.slider("Window", 1, 50, 5)
         k = st.slider("Standard Deviation", 1, 10, 2)
@@ -1077,15 +1040,18 @@ elif dashboard_selection == "Trends Analysis":
             xaxis_rangeslider_visible=False
         )
         return fig
-
-    def plot_trends(data, fig):
+    
+    def plot_trends(data: pd.DataFrame, fig: go.Figure) -> go.Figure:
         '''
         Plots Upward trend and Downward trend
         based on previous and current Close value.
 
         Parameters:
         data: Stock's Dataframe consisting on Close values
-        fig: Plotly's Figure object
+        fig: Plotly.graph_objects Figure object
+
+        Returns:
+        fig: Plotly.graph_objects Figure object
         '''
         close = data["Close"].values
 
@@ -1140,6 +1106,7 @@ elif dashboard_selection == "Trends Analysis":
             )
         )
         return fig
+    
 
     def plot_candles(data, fig):
         # Create subplots: 2 rows, shared X-axis, Price (row 1) is taller than Volume (row 2)
@@ -1194,19 +1161,40 @@ elif dashboard_selection == "Trends Analysis":
         new_fig.update_yaxes(showgrid=True, row=2, col=1)
 
         return new_fig 
-        
-
+    
 
     if ticker_symbol:
         try:
-            # Getting 3 years of data from yfinance using 
-            # user given ticker
-            ticker = yf.Ticker(ticker_symbol)
-            data = ticker.history(period="3Y")
+            # Fetch data based on user selected range
+            end_date = datetime.now()
+            
+            # Calculate start date based on selected label
+            range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
+            start_date = end_date - range_delta
+            
+            with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
+                stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
+            
+            if stock_data.empty:
+                st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
+            else:
+                # Flatten columns if multi-level
+                if isinstance(stock_data.columns, pd.MultiIndex):
+                    stock_data.columns = stock_data.columns.get_level_values(0)
 
-            data = preprocess(data)
+                # Stock Data Handling
+                data = {
+                    'Date': stock_data.index,
+                    'Open': stock_data['Open'],
+                    'High': stock_data['High'],
+                    'Low': stock_data['Low'],
+                    'Close': stock_data['Close'],
+                    'Volume': stock_data['Volume'],
+                }
 
-            indicators_plot = {
+                data = preprocess(pd.DataFrame(data))
+                
+                indicators_plot = {
                 "Bollinger Bands": {"function": plot_bollinger_bands,
                                     "info": "are a technical analysis tool that consists of three lines: "
                                     " a middle line which is a simple moving average (SMA), "
@@ -1264,9 +1252,8 @@ elif dashboard_selection == "Trends Analysis":
             for option in valid_selection:
                 st.info(f"**{option}**: {indicators_plot[option]['info']}")
 
-
         except Exception as e:
-            st.error(f"Ticker does not exist {e}")
+            st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
         
 #------------------------------------END OF YUAN WEI PART-----------------------------------
 

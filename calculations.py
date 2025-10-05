@@ -229,7 +229,7 @@ def max_profit_with_days(prices, dates):
 
 
 #------------------------------------START OF YUAN WEI PART----------------------------------
-def bollinger_bands(data, window=5, k=2):
+def bollinger_bands(data: pd.DataFrame, window: int = 5, k: int = 2) -> pd.DataFrame:
     '''
     Calculates Bollinger Bands for given price data
 
