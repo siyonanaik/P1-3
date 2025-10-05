@@ -202,7 +202,7 @@ to analyze stock tickers and get AI-powered insights.
 st.sidebar.title("Dashboard Menu")
 dashboard_selection = st.sidebar.radio(
     "Select a dashboard view:",
-    ("RSI Visualization & Explanation", "SMA & EMA", "Daily Returns", "Max Profit Calculation", "Trends Analysis")
+    ("Trends Analysis", "Daily Returns", "SMA & EMA", "RSI Visualization & Explanation", "ATR", "Max Profit Calculation")
 )
 
 
@@ -725,6 +725,67 @@ elif dashboard_selection == "Daily Returns":
                 st.plotly_chart(fig_daily_return, use_container_width=True)
 
             
+
+        except Exception as e:
+            st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
+
+
+elif dashboard_selection == "ATR":
+    st.markdown("---") 
+    st.header("Average True Range (ATR)")
+    st.subheader("ATR")
+
+    ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
+
+    # --- NEW TIME RANGE SELECTION LOGIC ---
+    TIME_RANGES = {
+        "1W": timedelta(weeks=1),
+        "1M": timedelta(days=30),      # Approximation
+        "3M": timedelta(days=90),      # Approximation
+        "1Y": timedelta(days=365),
+        "3Y": timedelta(days=365 * 3), # Approximation
+    }
+
+    selected_range_label = st.radio(
+        "Select Time Range:",
+        options=list(TIME_RANGES.keys()),
+        index=3, # Default to 1Y
+        horizontal=True
+    )
+
+    if ticker_symbol:
+        try:
+            # Fetch data based on user selected range
+            end_date = datetime.now()
+            
+            # Calculate start date based on selected label
+            range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
+            start_date = end_date - range_delta
+            
+            with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
+                stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
+            
+            if stock_data.empty:
+                st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
+            else:
+                # Flatten columns if multi-level
+                if isinstance(stock_data.columns, pd.MultiIndex):
+                    stock_data.columns = stock_data.columns.get_level_values(0)
+
+                # Stock Data Handling
+                data = {
+                    'Date': stock_data.index,
+                    'Open': stock_data['Open'],
+                    'High': stock_data['High'],
+                    'Low': stock_data['Low'],
+                    'Close': stock_data['Close'],
+                    'Volume': stock_data['Volume'],
+                }
+
+                df = pd.DataFrame(data)
+                df = preprocess(df)
+
+                # REST OF THE CODE GOES HERE ----------------------------------------------------------------------------------------------
 
         except Exception as e:
             st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
