@@ -379,24 +379,24 @@ elif dashboard_selection == "SMA & EMA":
 
     ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
 
-    # --- NEW TIME RANGE SELECTION LOGIC ---
-    TIME_RANGES = {
-        "1W": timedelta(weeks=1),
-        "1M": timedelta(days=30),      # Approximation
-        "3M": timedelta(days=90),      # Approximation
-        "1Y": timedelta(days=365),
-        "3Y": timedelta(days=365 * 3), # Approximation
-    }
-
-    selected_range_label = st.radio(
-        "Select Time Range:",
-        options=list(TIME_RANGES.keys()),
-        index=3, # Default to 1Y
-        horizontal=True
-    )
-
     if ticker_symbol:
         try:
+            # --- NEW TIME RANGE SELECTION LOGIC ---
+            TIME_RANGES = {
+                "1W": timedelta(weeks=1),
+                "1M": timedelta(days=30),      # Approximation
+                "3M": timedelta(days=90),      # Approximation
+                "1Y": timedelta(days=365),
+                "3Y": timedelta(days=365 * 3), # Approximation
+            }
+
+            selected_range_label = st.radio(
+                "Select Time Range:",
+                options=list(TIME_RANGES.keys()),
+                index=3, # Default to 1Y
+                horizontal=True
+            )
+
             # Fetch data based on user selected range
             end_date = datetime.now()
             
@@ -577,25 +577,25 @@ elif dashboard_selection == "Daily Returns":
     st.header("Live Stock Ticker Analysis")
 
     ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
-
-    # --- NEW TIME RANGE SELECTION LOGIC ---
-    TIME_RANGES = {
-        "1W": timedelta(weeks=1),
-        "1M": timedelta(days=30),      # Approximation
-        "3M": timedelta(days=90),      # Approximation
-        "1Y": timedelta(days=365),
-        "3Y": timedelta(days=365 * 3), # Approximation
-    }
-
-    selected_range_label = st.radio(
-        "Select Time Range:",
-        options=list(TIME_RANGES.keys()),
-        index=3, # Default to 1Y
-        horizontal=True
-    )
     
     if ticker_symbol:
         try:
+            # --- NEW TIME RANGE SELECTION LOGIC ---
+            TIME_RANGES = {
+                "1W": timedelta(weeks=1),
+                "1M": timedelta(days=30),      # Approximation
+                "3M": timedelta(days=90),      # Approximation
+                "1Y": timedelta(days=365),
+                "3Y": timedelta(days=365 * 3), # Approximation
+            }
+
+            selected_range_label = st.radio(
+                "Select Time Range:",
+                options=list(TIME_RANGES.keys()),
+                index=3, # Default to 1Y
+                horizontal=True
+            )
+
             # Fetch data based on user selected range
             end_date = datetime.now()
             
@@ -737,24 +737,24 @@ elif dashboard_selection == "ATR":
 
     ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
 
-    # --- NEW TIME RANGE SELECTION LOGIC ---
-    TIME_RANGES = {
-        "1W": timedelta(weeks=1),
-        "1M": timedelta(days=30),      # Approximation
-        "3M": timedelta(days=90),      # Approximation
-        "1Y": timedelta(days=365),
-        "3Y": timedelta(days=365 * 3), # Approximation
-    }
-
-    selected_range_label = st.radio(
-        "Select Time Range:",
-        options=list(TIME_RANGES.keys()),
-        index=3, # Default to 1Y
-        horizontal=True
-    )
-
     if ticker_symbol:
         try:
+            # --- NEW TIME RANGE SELECTION LOGIC ---
+            TIME_RANGES = {
+                "1W": timedelta(weeks=1),
+                "1M": timedelta(days=30),      # Approximation
+                "3M": timedelta(days=90),      # Approximation
+                "1Y": timedelta(days=365),
+                "3Y": timedelta(days=365 * 3), # Approximation
+            }
+
+            selected_range_label = st.radio(
+                "Select Time Range:",
+                options=list(TIME_RANGES.keys()),
+                index=3, # Default to 1Y
+                horizontal=True
+            )
+
             # Fetch data based on user selected range
             end_date = datetime.now()
             
@@ -845,24 +845,24 @@ elif dashboard_selection == "Max Profit Calculation":
 
     ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
 
-    # --- NEW TIME RANGE SELECTION LOGIC ---
-    TIME_RANGES = {
-        "1W": timedelta(weeks=1),
-        "1M": timedelta(days=30),      # Approximation
-        "3M": timedelta(days=90),      # Approximation
-        "1Y": timedelta(days=365),
-        "3Y": timedelta(days=365 * 3), # Approximation
-    }
-
-    selected_range_label = st.radio(
-        "Select Time Range:",
-        options=list(TIME_RANGES.keys()),
-        index=3, # Default to 1Y
-        horizontal=True
-    )
-
     if ticker_symbol:
         try:
+            # --- NEW TIME RANGE SELECTION LOGIC ---
+            TIME_RANGES = {
+                "1W": timedelta(weeks=1),
+                "1M": timedelta(days=30),      # Approximation
+                "3M": timedelta(days=90),      # Approximation
+                "1Y": timedelta(days=365),
+                "3Y": timedelta(days=365 * 3), # Approximation
+            }
+
+            selected_range_label = st.radio(
+                "Select Time Range:",
+                options=list(TIME_RANGES.keys()),
+                index=3, # Default to 1Y
+                horizontal=True
+            )
+
             # Fetch data based on user selected range
             end_date = datetime.now()
             
@@ -965,24 +965,24 @@ elif dashboard_selection == "Trends Analysis":
     # user_ticker = st.text_input("Enter a Ticker Symbol: (e.g. AAPL, GOOG ...)").upper()
     ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
 
-    # --- NEW TIME RANGE SELECTION LOGIC ---
-    TIME_RANGES = {
-        "1W": timedelta(weeks=1),
-        "1M": timedelta(days=30),      # Approximation
-        "3M": timedelta(days=90),      # Approximation
-        "1Y": timedelta(days=365),
-        "3Y": timedelta(days=365 * 3), # Approximation
-    }
-
-    selected_range_label = st.radio(
-        "Select Time Range:",
-        options=list(TIME_RANGES.keys()),
-        index=3, # Default to 1Y
-        horizontal=True
-    )
-
     if ticker_symbol:
         try:
+            # --- NEW TIME RANGE SELECTION LOGIC ---
+            TIME_RANGES = {
+                "1W": timedelta(weeks=1),
+                "1M": timedelta(days=30),      # Approximation
+                "3M": timedelta(days=90),      # Approximation
+                "1Y": timedelta(days=365),
+                "3Y": timedelta(days=365 * 3), # Approximation
+            }
+
+            selected_range_label = st.radio(
+                "Select Time Range:",
+                options=list(TIME_RANGES.keys()),
+                index=3, # Default to 1Y
+                horizontal=True
+            )
+
             # Fetch data based on user selected range
             end_date = datetime.now()
             
