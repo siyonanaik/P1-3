@@ -1240,7 +1240,7 @@ elif dashboard_selection == "Trends Analysis":
 
     if ticker_symbol:
         try:
-# Time Range Selection
+            # Time Range Selection
             TIME_RANGES = {
                 "1W": timedelta(weeks=1),
                 "1M": timedelta(days=30),      # Approximation
