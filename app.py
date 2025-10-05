@@ -263,7 +263,6 @@ if dashboard_selection == "RSI Visualization & Explanation":
 
                 # Stock Data Handling
                 data = {
-                    'Date': full_stock_data.index,
                     'Open': full_stock_data['Open'],
                     'High': full_stock_data['High'],
                     'Low': full_stock_data['Low'],
@@ -272,7 +271,14 @@ if dashboard_selection == "RSI Visualization & Explanation":
                 }
 
                 df = pd.DataFrame(data)
-                df = preprocess(df)
+
+                # Preprocess data using preprocess function in helper.py
+                try:
+                    df = preprocess(df)
+                except Exception as e:
+                    # Code to handle the error
+                    print(f"An error occurred: {e}")
+                    st.error(f"Error with data for ticker: {ticker_symbol}. {e}. Please try another ticker.")
 
 
                 # --- TAB DEFINITION ---
@@ -416,7 +422,6 @@ elif dashboard_selection == "SMA & EMA":
 
                 # Stock Data Handling
                 data = {
-                    'Date': stock_data.index,
                     'Open': stock_data['Open'],
                     'High': stock_data['High'],
                     'Low': stock_data['Low'],
@@ -425,7 +430,14 @@ elif dashboard_selection == "SMA & EMA":
                 }
 
                 df = pd.DataFrame(data)
-                df = preprocess(df)
+
+                # Preprocess data using preprocess function in helper.py
+                try:
+                    df = preprocess(df)
+                except Exception as e:
+                    # Code to handle the error
+                    print(f"An error occurred: {e}")
+                    st.error(f"Error with data for ticker: {ticker_symbol}. {e}. Please try another ticker.")
 
                 # REST OF THE CODE GOES HERE ----------------------------------------------------------------------------------------------
 
@@ -574,13 +586,36 @@ elif dashboard_selection == "SMA & EMA":
 
 elif dashboard_selection == "Daily Returns":
     st.markdown("---")
-    st.header("Live Stock Ticker Analysis")
+    st.header("Daily Returns")
 
     ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
     
     if ticker_symbol:
         try:
-            # --- NEW TIME RANGE SELECTION LOGIC ---
+            # Daily Returns explaination
+            st.markdown("---")
+            st.write("### What is Daily Returns?")
+
+            # Daily Returns formula to show
+            daily_returns_formula = (r"r_t = \frac{p_t - p_{t-1}}{p_{t-1}} \times 100")
+            st.latex(daily_returns_formula)
+
+            st.write("**where:**")
+            st.write("- $r_t$ = percentage daily return")
+            st.write("- $p_t$ and $p_{t-1}$ = closing prices of day t and day t-1, respectively")
+
+            # Left align formula
+            st.markdown('''
+            <style>
+            .katex-html {
+                text-align: left;
+            }
+            </style>
+            ''', unsafe_allow_html=True)
+
+            st.markdown("---")
+
+            # Time Range Selection
             TIME_RANGES = {
                 "1W": timedelta(weeks=1),
                 "1M": timedelta(days=30),      # Approximation
@@ -603,9 +638,11 @@ elif dashboard_selection == "Daily Returns":
             range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
             start_date = end_date - range_delta
             
+            # Download data from yfinance
             with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
                 stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
             
+            # If wrong ticker symbol entered, return error msg
             if stock_data.empty:
                 st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
             else:
@@ -615,7 +652,6 @@ elif dashboard_selection == "Daily Returns":
 
                 # Stock Data Handling
                 data = {
-                    'Date': stock_data.index,
                     'Open': stock_data['Open'],
                     'High': stock_data['High'],
                     'Low': stock_data['Low'],
@@ -624,94 +660,23 @@ elif dashboard_selection == "Daily Returns":
                 }
 
                 df = pd.DataFrame(data)
-                df = preprocess(df)
 
-                # --- Close and Close+Atr and ATR Section (Current Ticker) ---
-                st.subheader(f"Average True Range (ATR) Analysis for {ticker_symbol}")
-                
-                # Create subplots: 2 rows, shared X-axis, Price (row 1) is taller than ATR (row 2)
-                fig_combined = make_subplots(
-                    rows=2, cols=1, 
-                    shared_xaxes=True, 
-                    vertical_spacing=0.05,
-                    row_heights=[0.7, 0.3]
-                )
-                
-                # 1. Close and Close+ATR Line Chart (Row 1)
-                close_line = go.Scatter(
-                    x=df['Date'],
-                    y=df['Close'],
-                    mode='lines',
-                    name='Close'
-                )
-                fig_combined.add_trace(close_line, row=1, col=1)
+                # Preprocess data using preprocess function in helper.py
+                try:
+                    df = preprocess(df)
+                except Exception as e:
+                    # Code to handle the error
+                    print(f"An error occurred: {e}")
+                    st.error(f"Error with data for ticker: {ticker_symbol}. {e}. Please try another ticker.")
 
-                df['TR'] = calculate_true_range(df['High'], df['Low'], df['Close'])
-                df['ATR'] = calculate_average_true_range(df['TR'])
-                df['Close+ATR'] = [close + atr for close, atr in zip(df['Close'], df['ATR'])]
-
-                close_atr_line = go.Scatter(
-                    x=df['Date'],
-                    y=df['Close+ATR'],
-                    mode='lines',
-                    name='Close+ATR'
-                )
-                fig_combined.add_trace(close_atr_line, row=1, col=1)
-            
-
-                # 2. ATR Line Chart (Row 2)
-                atr_line = go.Scatter(
-                    x=df['Date'],
-                    y=df['ATR'],
-                    mode='lines',
-                    name='ATR'
-                )
-                fig_combined.add_trace(atr_line, row=2, col=1)
-
-                # Update layout for a cleaner financial look
-                fig_combined.update_layout(
-                    title_text=f"Close Price with ATR Analysis for {ticker_symbol}",
-                    xaxis_rangeslider_visible=False, # Hide the main range slider
-                    xaxis2_title="Date",
-                    yaxis_title="Price ($)",
-                    yaxis2_title="ATR ($)",
-                    height=700,
-                    template='plotly_white'
-                )
-                
-                # Finalize axis visibility and ranges
-                fig_combined.update_xaxes(showgrid=True, row=1, col=1)
-                fig_combined.update_yaxes(showgrid=True, row=1, col=1)
-                fig_combined.update_yaxes(showgrid=True, row=2, col=1)
-                
-                st.plotly_chart(fig_combined, use_container_width=True)
-
-
-                st.write("### What is ATR?")
-
-                atr_explanation = (
-                    "The average true range (ATR) is a technical analysis indicator that measures market volatility by "
-                    "decomposing the entire range of an asset price for that period. The true range indicator is taken as "
-                    "the greatest of the following: current high less the current low; the absolute value of the current high "
-                    "less the previous close; and the absolute value of the current low less the previous close. The ATR is then "
-                    "a moving average of the true ranges. While the ATR doesn't tell us in which direction the breakout will occur, "
-                    "it can be added to the closing price, and the trader can buy whenever the next day's price trades above that value. "
-                    "Trading signals occur relatively infrequently but usually indicate significant breakout points. The logic behind these "
-                    "signals is that whenever a price closes more than an ATR above the most recent close, a change in volatility has occurred."
-                )
-
-                st.info(atr_explanation)
-                st.markdown("---")
-
-
-                # --- Daily Returns Calculation and Plot ---
+                # Calculate Daily Returns
                 df['DailyReturns'] = calculate_daily_returns(df['Close'])
                 
                 st.subheader(f"Daily Returns for {ticker_symbol}")
 
                 # Daily Returns Plot
                 fig_daily_return = px.line(
-                    x=df['Date'],
+                    x=df.index,
                     y=df['DailyReturns'],
                     title=f"Daily Returns for {ticker_symbol}",
                 )
@@ -733,13 +698,71 @@ elif dashboard_selection == "Daily Returns":
 elif dashboard_selection == "ATR":
     st.markdown("---") 
     st.header("Average True Range (ATR)")
-    st.subheader("ATR")
 
     ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
 
     if ticker_symbol:
         try:
-            # --- NEW TIME RANGE SELECTION LOGIC ---
+            # ATR explaination
+            st.markdown("---")
+            st.write("### What is ATR?")
+
+            atr_explanation = (
+                "The average true range (ATR) is a technical analysis indicator that measures market volatility by "
+                "decomposing the entire range of an asset price for that period. While the ATR doesn't tell us in which direction the breakout will occur, "
+                "it can be added to the closing price, and the trader can buy whenever the next day's price trades above that value. "
+                "Trading signals occur relatively infrequently but usually indicate significant breakout points. The logic behind these "
+                "signals is that whenever a price closes more than an ATR above the most recent close, a change in volatility has occurred."
+            )
+
+            st.info(atr_explanation)
+
+            # TR and ATR formulas to show
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.subheader("True Range (TR)")
+                true_range_formula = (r"TR = \max[(H - L), |H - C_p|, |L - C_p|]")
+                st.latex(true_range_formula)
+                
+                st.write("**where:**")
+                st.write("- $H$ = Today's high")
+                st.write("- $L$ = Today's low") 
+                st.write("- $C_p$ = Yesterday's closing price")
+                st.write("- $\max$ = Highest value of the three terms")
+                
+                st.write("**so that:**")
+                st.write("- $(H - L)$ = Today's high minus low")
+                st.write("- $|H - C_p|$ = |Today's high - yesterday's close|")
+                st.write("- $|L - C_p|$ = |Today's low - yesterday's close|")
+
+            with col2:
+                st.subheader("Average True Range (ATR)")
+                atr_formula = (r"ATR = \frac{1}{n}\sum_{i=1}^{n} TR_i")
+                st.latex(atr_formula)
+                
+                st.write("**where:**")
+                st.write("- $ATR$ = Average True Range")
+                st.write("- $n$ = Number of periods")
+                st.write("- $TR_i$ = True Range for period $i$")
+                st.write("- $\sum$ = Summation of all TR values")
+                
+                st.write("**so that:**")
+                st.write("ATR is the simple moving average")
+                st.write("of True Range over $n$ periods")
+
+            # Left align formula
+            st.markdown('''
+            <style>
+            .katex-html {
+                text-align: left;
+            }
+            </style>
+            ''', unsafe_allow_html=True)
+
+            st.markdown("---")
+
+            # Time Range Selection
             TIME_RANGES = {
                 "1W": timedelta(weeks=1),
                 "1M": timedelta(days=30),      # Approximation
@@ -762,9 +785,11 @@ elif dashboard_selection == "ATR":
             range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
             start_date = end_date - range_delta
             
+            # Download data from yfinance
             with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
                 stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
             
+            # If wrong ticker symbol entered, return error msg
             if stock_data.empty:
                 st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
             else:
@@ -774,7 +799,6 @@ elif dashboard_selection == "ATR":
 
                 # Stock Data Handling
                 data = {
-                    'Date': stock_data.index,
                     'Open': stock_data['Open'],
                     'High': stock_data['High'],
                     'Low': stock_data['Low'],
@@ -783,9 +807,75 @@ elif dashboard_selection == "ATR":
                 }
 
                 df = pd.DataFrame(data)
-                df = preprocess(df)
 
-                # REST OF THE CODE GOES HERE ----------------------------------------------------------------------------------------------
+                # Preprocess data using preprocess function in helper.py
+                try:
+                    df = preprocess(df)
+                except Exception as e:
+                    # Code to handle the error
+                    print(f"An error occurred: {e}")
+                    st.error(f"Error with data for ticker: {ticker_symbol}. {e}. Please try another ticker.")
+
+                st.subheader(f"Average True Range (ATR) Analysis for {ticker_symbol}")
+                
+                # Create subplots: 2 rows, shared x-axis
+                fig_combined = make_subplots(
+                    rows=2, cols=1, 
+                    shared_xaxes=True, 
+                    vertical_spacing=0.05,
+                    row_heights=[0.7, 0.3]
+                )
+                
+                # Close Line Chart (0.5/2)
+                close_line = go.Scatter(
+                    x=df.index,
+                    y=df['Close'],
+                    mode='lines',
+                    name='Close'
+                )
+                fig_combined.add_trace(close_line, row=1, col=1)
+
+                # Calculate TR, ATR and Close+ATR values
+                df['TR'] = calculate_true_range(df['High'], df['Low'], df['Close'])
+                df['ATR'] = calculate_average_true_range(df['TR'])
+                df['Close+ATR'] = [close + atr for close, atr in zip(df['Close'], df['ATR'])]
+
+                # Close+ATR Line Chart (1/2)
+                close_atr_line = go.Scatter(
+                    x=df.index,
+                    y=df['Close+ATR'],
+                    mode='lines',
+                    name='Close+ATR'
+                )
+                fig_combined.add_trace(close_atr_line, row=1, col=1)
+            
+
+                # ATR Line Chart (2/2)
+                atr_line = go.Scatter(
+                    x=df.index,
+                    y=df['ATR'],
+                    mode='lines',
+                    name='ATR'
+                )
+                fig_combined.add_trace(atr_line, row=2, col=1)
+
+                # Update layout
+                fig_combined.update_layout(
+                    title_text=f"Close Price with ATR Analysis for {ticker_symbol}",
+                    xaxis_rangeslider_visible=False, # Hide the main range slider
+                    xaxis2_title="Date",
+                    yaxis_title="Price ($)",
+                    yaxis2_title="ATR ($)",
+                    height=700,
+                    template='plotly_white'
+                )
+                
+                # Finalize axis visibility and ranges
+                fig_combined.update_xaxes(showgrid=True, row=1, col=1)
+                fig_combined.update_yaxes(showgrid=True, row=1, col=1)
+                fig_combined.update_yaxes(showgrid=True, row=2, col=1)
+                
+                st.plotly_chart(fig_combined, use_container_width=True)
 
         except Exception as e:
             st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
@@ -882,7 +972,6 @@ elif dashboard_selection == "Max Profit Calculation":
 
                 # Stock Data Handling
                 data = {
-                    'Date': stock_data.index,
                     'Open': stock_data['Open'],
                     'High': stock_data['High'],
                     'Low': stock_data['Low'],
@@ -891,7 +980,14 @@ elif dashboard_selection == "Max Profit Calculation":
                 }
 
                 df = pd.DataFrame(data)
-                df = preprocess(df)
+
+                # Preprocess data using preprocess function in helper.py
+                try:
+                    df = preprocess(df)
+                except Exception as e:
+                    # Code to handle the error
+                    print(f"An error occurred: {e}")
+                    st.error(f"Error with data for ticker: {ticker_symbol}. {e}. Please try another ticker.")
 
                 # REST OF THE CODE GOES HERE ----------------------------------------------------------------------------------------------
 
@@ -1002,7 +1098,6 @@ elif dashboard_selection == "Trends Analysis":
 
                 # Stock Data Handling
                 data = {
-                    'Date': stock_data.index,
                     'Open': stock_data['Open'],
                     'High': stock_data['High'],
                     'Low': stock_data['Low'],
@@ -1011,7 +1106,14 @@ elif dashboard_selection == "Trends Analysis":
                 }
 
                 df = pd.DataFrame(data)
-                df = preprocess(df)
+
+                # Preprocess data using preprocess function in helper.py
+                try:
+                    df = preprocess(df)
+                except Exception as e:
+                    # Code to handle the error
+                    print(f"An error occurred: {e}")
+                    st.error(f"Error with data for ticker: {ticker_symbol}. {e}. Please try another ticker.")
 
                 # REST OF THE CODE GOES HERE ----------------------------------------------------------------------------------------------
 
