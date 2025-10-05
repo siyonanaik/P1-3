@@ -964,24 +964,6 @@ elif dashboard_selection == "Trends Analysis":
 
     ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
 
-    if ticker_symbol:
-        try:
-            # --- NEW TIME RANGE SELECTION LOGIC ---
-            TIME_RANGES = {
-                "1W": timedelta(weeks=1),
-                "1M": timedelta(days=30),      # Approximation
-                "3M": timedelta(days=90),      # Approximation
-                "1Y": timedelta(days=365),
-                "3Y": timedelta(days=365 * 3), # Approximation
-            }
-
-            selected_range_label = st.radio(
-                "Select Time Range:",
-                options=list(TIME_RANGES.keys()),
-                index=3, # Default to 1Y
-                horizontal=True
-            )
-
     def plot_bollinger_bands(data: pd.DataFrame, fig: go.Figure) -> go.Figure:
         '''
         Plots Bollinger Bands on plotly chart after
@@ -1167,6 +1149,22 @@ elif dashboard_selection == "Trends Analysis":
 
     if ticker_symbol:
         try:
+            # --- NEW TIME RANGE SELECTION LOGIC ---
+            TIME_RANGES = {
+                "1W": timedelta(weeks=1),
+                "1M": timedelta(days=30),      # Approximation
+                "3M": timedelta(days=90),      # Approximation
+                "1Y": timedelta(days=365),
+                "3Y": timedelta(days=365 * 3), # Approximation
+            }
+
+            selected_range_label = st.radio(
+                "Select Time Range:",
+                options=list(TIME_RANGES.keys()),
+                index=3, # Default to 1Y
+                horizontal=True
+            )
+
             # Fetch data based on user selected range
             end_date = datetime.now()
             
@@ -1256,6 +1254,9 @@ elif dashboard_selection == "Trends Analysis":
 
         except Exception as e:
             st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
+
+
+            
         
 #------------------------------------END OF YUAN WEI PART-----------------------------------
 
