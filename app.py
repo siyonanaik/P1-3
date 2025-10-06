@@ -5,6 +5,7 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime, timedelta
+import pandas_ta as ta
 from calculations import *
 from apihandler import *
 from helper import *
@@ -980,6 +981,14 @@ elif dashboard_selection == "Trends Analysis":
 
 
         bands = bollinger_bands(data=data, window=window, k=k)
+        validation_bands = data.ta.bbands(length=window, std=k)
+
+        fig = make_subplots(
+            rows=2, cols=1, 
+            shared_xaxes=True, 
+            vertical_spacing=0.05,
+            row_heights=[0.5, 0.5]
+            )
 
         # Closing price line
         fig.add_trace(go.Candlestick(
@@ -989,14 +998,14 @@ elif dashboard_selection == "Trends Analysis":
             high=data['High'],
             low=data['Low'],
             name="Closing Price"
-        ))
+        ), row=1, col=1)
 
         # SMA
         fig.add_trace(go.Scatter(
             x=data.index, y=bands['SMA'],
             name="SMA",
             line=dict(color="orange")
-        ))
+        ), row=1, col=1)
 
         # Upper Band
         fig.add_trace(go.Scatter(
@@ -1004,7 +1013,7 @@ elif dashboard_selection == "Trends Analysis":
             name="Upper Band",
             line=dict(color="green"),
             mode="lines"
-        ))
+        ), row=1, col=1)
 
         # Lower Band
         fig.add_trace(go.Scatter(
@@ -1014,7 +1023,35 @@ elif dashboard_selection == "Trends Analysis":
             mode="lines",
             fill='tonexty',         # fills to previous trace (Upper Band)
             fillcolor="rgba(128,128,128,0.3)"
-        ))
+        ), row=1, col=1)
+
+
+        fig.add_trace(go.Scatter(
+            x=data.index,
+            y=validation_bands[f"BBU_{window}_2.0_2.0"],
+            mode="lines",
+            name="Upper Band",
+            line=dict(color="green"),
+            showlegend=False
+        ), row=2, col=1)
+
+        fig.add_trace(go.Scatter(
+            x=data.index,
+            y=validation_bands[f"BBL_{window}_2.0_2.0"],
+            mode="lines",
+            name="Lower Band",
+            line=dict(color="red"),
+            showlegend=False
+        ), row=2, col=1)
+
+        fig.add_trace(go.Scatter(
+            x=data.index,
+            y=validation_bands[f"BBM_{window}_2.0_2.0"],
+            mode="lines",
+            name="Middle Band (SMA)",
+            line=dict(color="blue"),
+            showlegend=False
+        ), row=2, col=1)
 
         fig.update_layout(
             title="Bollinger Bands",
@@ -1038,15 +1075,29 @@ elif dashboard_selection == "Trends Analysis":
         fig: Plotly.graph_objects Figure object
         '''
         close = data["Close"].values
+        up_streak = 0
+        down_streak = 0
+        longest_up = {"length": 0, "end_date": None}
+        longest_down = {"length": 0, "end_date": None}
 
         for i in range(1, len(data)):
             prev, current = close[i-1], close[i]
-            if current > prev:
+            if current > prev: # Uptrend
                 color = "green"
-            elif current < prev:
+                up_streak += 1
+                down_streak = 0
+            elif current < prev: # Downtrend
                 color = "red"
-            else:
+                down_streak += 1
+                up_streak = 0
+            else: # Flat
                 color = "grey"
+                up_streak = down_streak = 0
+
+            if up_streak > longest_up["length"]:
+                longest_up.update({"length": up_streak, "end_date": data.index[i]})
+            if down_streak > longest_down["length"]:
+                longest_down.update({"length": down_streak, "end_date": data.index[i]})
 
             # Add each small segment as its own trace
             fig.add_trace(go.Scatter(
@@ -1057,6 +1108,20 @@ elif dashboard_selection == "Trends Analysis":
                 hoverinfo='skip',
                 showlegend=False   # hide legend spam
             ))
+
+        # Computing start dates for longest streak
+        if longest_up["end_date"] is not None:
+            end_idx = data.index.get_loc(longest_up["end_date"])
+            longest_up["start_date"] = data.index[end_idx - longest_up['length']]
+
+        if longest_down["end_date"] is not None:
+            end_idx = data.index.get_loc(longest_down["end_date"])
+            longest_down["start_date"] = data.index[end_idx - longest_down['length']]
+
+        streaks = {
+            "longest_uptrend": longest_up,
+            "longest_downtrend": longest_down
+        }
         
         # Dummy data to show legend
         fig.add_trace(go.Scatter(
@@ -1080,15 +1145,60 @@ elif dashboard_selection == "Trends Analysis":
             name="Flat"
         ))
 
+
+        shapes = []
+        annotations = []
+
+        if longest_up["end_date"]:
+            shapes.append(dict(
+                type="rect",
+                xref="x", yref="paper",
+                x0=longest_up["start_date"], x1=longest_up["end_date"],
+                y0=0, y1=1,
+                fillcolor="rgba(0,255,0,0.15)",
+                line=dict(width=0),
+                layer="below"
+            ))
+            annotations.append(dict(
+                x=longest_up["end_date"],
+                y=max(close),
+                text=f"Longest Uptrend ({longest_up['length']} days)",
+                showarrow=False,
+                font=dict(color="green", size=12)
+            ))
+
+        if longest_down["end_date"]:
+            shapes.append(dict(
+                type="rect",
+                xref="x", yref="paper",
+                x0=longest_down["start_date"], x1=longest_down["end_date"],
+                y0=0, y1=1,
+                fillcolor="rgba(255,0,0,0.15)",
+                line=dict(width=0),
+                layer="below"
+            ))
+            annotations.append(dict(
+                x=longest_down["end_date"],
+                y=min(close),
+                text=f"Longest Downtrend ({longest_down['length']} days)",
+                showarrow=False,
+                font=dict(color="red", size=12)
+            ))
+
         fig.update_layout(
-            title="Trend Line Chart",
-            xaxis_title="Date",
-            yaxis_title="Price($)",
-            hovermode="x unified",
-            legend=dict(
-                orientation="v"
-            )
+        title="Trend Line Chart",
+        xaxis_title="Date",
+        yaxis_title="Price ($)",
+        hovermode="x unified",
+        legend=dict(orientation="v", x=1, xanchor="right"),
+        shapes=shapes,
+        annotations=annotations
         )
+
+        st.info(f"This longest Uptrend is from {streaks["longest_uptrend"]["start_date"].strftime("%b %d, %Y")} to {streaks["longest_uptrend"]["end_date"].strftime("%b %d, %Y")} and lasted for {streaks["longest_uptrend"]["length"]} days")
+        st.info(f"This longest Downtrend is from {streaks["longest_downtrend"]["start_date"].strftime("%b %d, %Y")} to {streaks["longest_downtrend"]["end_date"].strftime("%b %d, %Y")} and lasted for {streaks["longest_downtrend"]["length"]} days")
+
+
         return fig
     
 
