@@ -692,7 +692,7 @@ elif dashboard_selection == "📊 Daily Returns":
                     st.error(f"Error with data for ticker: {ticker_symbol}. {e}. Please try another ticker.")
 
                 # Calculate Daily Returns
-                df['DailyReturns'] = calculate_daily_returns(df['Close'])
+                df['DailyReturns'] = calculate_daily_returns(df['Close'].tolist())
                 
                 st.subheader(f"Daily Returns for {ticker_symbol}")
 
@@ -717,7 +717,7 @@ elif dashboard_selection == "📊 Daily Returns":
             st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
 
 
-elif dashboard_selection == "ATR":
+elif dashboard_selection == "📐 ATR":
     st.markdown("---") 
     st.header("Average True Range (ATR)")
 
@@ -747,39 +747,44 @@ elif dashboard_selection == "ATR":
                 true_range_formula = (r"TR = \max[(H - L), |H - C_p|, |L - C_p|]")
                 st.latex(true_range_formula)
                 
-                st.subheader(f"Daily Returns for {ticker_symbol}")
+                st.write("**where:**")
+                st.write("- $H$ = Today's high")
+                st.write("- $L$ = Today's low") 
+                st.write("- $C_p$ = Yesterday's closing price")
+                st.write("- $\max$ = Highest value of the three terms")
+                
+                st.write("**so that:**")
+                st.write("- $(H - L)$ = Today's high minus low")
+                st.write("- $|H - C_p|$ = |Today's high - yesterday's close|")
+                st.write("- $|L - C_p|$ = |Today's low - yesterday's close|")
 
-                # Daily Returns Plot
-                fig_daily_return = px.line(
-                    x=df['Date'],
-                    y=df['DailyReturns'],
-                    title=f"Daily Returns for {ticker_symbol}",
-                )
+            with col2:
+                st.subheader("Average True Range (ATR)")
+                atr_formula = (r"ATR = \frac{1}{n}\sum_{i=1}^{n} TR_i")
+                st.latex(atr_formula)
+                
+                st.write("**where:**")
+                st.write("- $ATR$ = Average True Range")
+                st.write("- $n$ = Number of periods")
+                st.write("- $TR_i$ = True Range for period $i$")
+                st.write("- $\sum$ = Summation of all TR values")
+                
+                st.write("**so that:**")
+                st.write("ATR is the simple moving average")
+                st.write("of True Range over $n$ periods")
 
-                # Rename X and Y Axis
-                fig_daily_return.update_layout(
-                    xaxis_title = "Date",
-                    yaxis_title = "Daily Returns (%)"
-                )
+            # Left align formula
+            st.markdown('''
+            <style>
+            .katex-html {
+                text-align: left;
+            }
+            </style>
+            ''', unsafe_allow_html=True)
 
-                st.plotly_chart(fig_daily_return, use_container_width=True)
+            st.markdown("---")
 
-            
-
-        except Exception as e:
-            st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
-
-
-elif dashboard_selection == "ATR":
-    st.markdown("---") 
-    st.header("Average True Range (ATR)")
-    st.subheader("ATR")
-
-    ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
-
-    if ticker_symbol:
-        try:
-            # --- NEW TIME RANGE SELECTION LOGIC ---
+            # Time Range Selection
             TIME_RANGES = {
                 "1W": timedelta(weeks=1),
                 "1M": timedelta(days=30),      # Approximation
@@ -852,9 +857,9 @@ elif dashboard_selection == "ATR":
                 fig_combined.add_trace(close_line, row=1, col=1)
 
                 # Calculate TR, ATR and Close+ATR values
-                df['TR'] = calculate_true_range(df['High'], df['Low'], df['Close'])
-                df['ATR'] = calculate_average_true_range(df['TR'])
-                df['Close+ATR'] = [close + atr for close, atr in zip(df['Close'], df['ATR'])]
+                df['TR'] = calculate_true_range(df['High'].tolist(), df['Low'].tolist(), df['Close'].tolist())
+                df['ATR'] = calculate_average_true_range(df['TR'].tolist())
+                df['Close+ATR'] = [close + atr for close, atr in zip(df['Close'].tolist(), df['ATR'].tolist())]
 
                 # Close+ATR Line Chart (1/2)
                 close_atr_line = go.Scatter(
