@@ -993,6 +993,7 @@ elif dashboard_selection == "💰 Max Profit Calculation":
 
                 # Stock Data Handling
                 data = {
+                    'Date': stock_data.index,
                     'Open': stock_data['Open'],
                     'High': stock_data['High'],
                     'Low': stock_data['Low'],
@@ -1016,7 +1017,7 @@ elif dashboard_selection == "💰 Max Profit Calculation":
 
         # Sorting Transactions
         prices = df["Close"].values
-        dates = pd.to_datetime(df["Date"]).values  
+        dates = pd.to_datetime(df["Date"]).values
 
         total_profit, transactions = max_profit_with_days(prices, dates)
         rounded_total_profit = round(float(total_profit),2)
