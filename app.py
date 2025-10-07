@@ -865,50 +865,6 @@ elif dashboard_selection == "💰 Max Profit Calculation":
     st.markdown("---")
     st.header("Max Profit Calculation Dashboard")
     
-    # #Stock Ticker Selection
-    # ticker = st.text_input("Enter Stock Ticker Symbol").upper()
-
-    # if not ticker:
-    #     st.warning("Please enter a valid stock ticker symbol")
-    #     st.stop()
-
-    # #Stock Time Period Selection
-    # period_options = {
-    #     "1 Week": 7,
-    #     "1 Month": 30,
-    #     "3 Months": 90,
-    #     "6 Months": 180,
-    #     "1 Year": 365,
-    #     "2 Years": 365*2,
-    #     "3 Years": 365*3
-    # }
-
-    # selected_period = st.selectbox(
-    #     "Select Time Period",
-    #     list(period_options.keys()),
-    #     index=4  # Default is 1 Year
-    # )
-
-    # # Calculate Date Range
-    # if period_options[selected_period]:
-    #     end_date = datetime.now()
-    #     start_date = end_date - timedelta(days=period_options[selected_period])
-
-    # # Download Stock Data
-    # with st.spinner(f"Fetching {ticker} data..."):
-    #     try:
-    #         df = yf.download(ticker, start=start_date, end=end_date, progress=False)
-            
-    #         if df.empty:
-    #             st.error(f"No data available for {ticker} in selected period")
-    #             st.stop()
-                
-    #         # Reset Index To Keep "Date" As A Column
-    #         df.reset_index(inplace=True)
-            
-    #     except Exception as e:
-    #         st.error(f"Error downloading data: {str(e)}")
-    #         st.stop()
 
     ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
 
@@ -965,8 +921,6 @@ elif dashboard_selection == "💰 Max Profit Calculation":
                 except Exception as e:
                     # Code to handle the error
                     st.error(f"Error with data for ticker: {ticker_symbol}. {e}. Please try another ticker.")
-
-                # REST OF THE CODE GOES HERE ----------------------------------------------------------------------------------------------
 
         except Exception as e:
             st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data. Please try again.")
