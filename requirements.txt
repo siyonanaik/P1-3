@@ -8,5 +8,6 @@ python-dotenv
 matplotlib
 mpld3
 feedparser
+pandas_ta
 #os
 #>>>>>>> 8a35a7d (adding max profit)

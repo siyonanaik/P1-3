@@ -135,6 +135,22 @@ def calculate_daily_returns(close):
     Returns:
     - list of daily returns (%)
     """
+
+    # Input validation
+    if not close:
+        raise ValueError("Close prices list cannot be empty")
+    
+    if any(price <= 0 for price in close):
+        negative_prices = [price for price in close if price < 0]
+        zero_prices = [price for price in close if price == 0]
+        
+        if negative_prices:
+            raise ValueError(f"Stock prices cannot be negative. Found negative prices: {negative_prices}")
+        if zero_prices:
+            raise ZeroDivisionError(f"Stock prices cannot be zero (division by zero). Found zero prices: {zero_prices}")
+
+
+    # Day 1 daily return = 0
     dailyreturn_lst = [0]
 
     for i in range(1, len(close)): 
@@ -154,6 +170,48 @@ def calculate_true_range(high, low, close):
     Returns:
     - list of true range values
     """
+    # Input validation
+    if not high or not low or not close:
+        raise ValueError("All price lists (high, low, close) must be non-empty")
+    
+    if len(high) != len(low) or len(high) != len(close):
+        raise ValueError(f"All price lists must have the same length. High: {len(high)}, Low: {len(low)}, Close: {len(close)}")
+    
+    # Check for negative prices in all lists
+    all_prices = high + low + close
+    if any(price < 0 for price in all_prices):
+        negative_high = [price for price in high if price < 0]
+        negative_low = [price for price in low if price < 0]
+        negative_close = [price for price in close if price < 0]
+        
+        error_msg = "Stock prices cannot be negative. "
+        if negative_high:
+            error_msg += f"Negative high prices: {negative_high}. "
+        if negative_low:
+            error_msg += f"Negative low prices: {negative_low}. "
+        if negative_close:
+            error_msg += f"Negative close prices: {negative_close}."
+        
+        raise ValueError(error_msg.strip())
+    
+    # Check that high >= low, low <= high, high >= close for each day
+    for i in range(len(high)):
+        if high[i] < low[i]:
+            raise ValueError(f"High price ({high[i]}) cannot be less than low price ({low[i]}) on day {i}")
+        if low[i] > close[i]:
+            raise ValueError(f"Low price ({low[i]}) cannot be more than close price ({close[i]}) on day {i}")
+        if close[i] > high[i]:
+            raise ValueError(f"Close price ({close[i]}) cannot be more than high price ({high[i]}) on day {i}")
+    
+    # Check for zero prices
+    close_zero_prices = [price for price in close if price == 0]
+    high_zero_prices = [price for price in high if price == 0]
+    low_zero_prices = [price for price in low if price == 0]
+    if close_zero_prices or high_zero_prices or low_zero_prices:
+        raise ValueError(f"Stock prices cannot be zero. Found zero prices: {close_zero_prices + high_zero_prices + low_zero_prices}")
+
+
+    # Day 1 TR = High - Low, since there are no previous values
     tr_day_1 = high[0] - low[0]
     tr_lst = [tr_day_1]
 
@@ -176,8 +234,20 @@ def calculate_average_true_range(tr_lst):
     Returns:
     - list of average true range values
     """
+    # Input validation
+    if not tr_lst:
+        raise ValueError("True range list cannot be empty")
+    
+    if any(tr < 0 for tr in tr_lst):
+        negative_tr = [tr for tr in tr_lst if tr < 0]
+        raise ValueError(f"True range values cannot be negative. Found negative values: {negative_tr}")
+
+
+    # 7 Days
     time_period = 7
+    # Day 1 ATR = Day 1 TR
     atr_lst = [tr_lst[0]]
+    # previous_atr = Day 1 TR
     previous_atr = tr_lst[0]
 
     for i in range(1, len(tr_lst)):
