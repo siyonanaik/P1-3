@@ -118,17 +118,16 @@ if dashboard_selection == "👥 About Us":
             "github": "https://github.com/placeholder2"
         },
         {
-            "name": "Yuan Wei Placeholder",
-            "hobbies": "Red, Blue, Green",
+            "name": "Toh Yuan Wei",
+            "hobbies": "AI, Reading, Programming",
             "tasks": [
-                "Excepteur sint occaecat cupidatat",
-                "Non proident sunt in culpa",
-                "Qui officia deserunt mollit anim",
-                "Id est laborum lorem ipsum",
-                "Dolor sit amet consectetur"
+                "Calculation of Uptrend and Downtrend",
+                "Visualisation: Plotting Trends over close price",
+                "Bollinger Bands",
+                "Visualisation: Plotting bollinger bands on close price"
             ],
-            "linkedIn": "https://www.linkedin.com/in/placeholder3/",
-            "github": "https://github.com/placeholder3"
+            "linkedIn": "https://www.linkedin.com/in/toh-yuanwei-55b7461aa/",
+            "github": "https://github.com/TYW02"
         },
         {
             "name": "Kai Rei Placeholder",
@@ -1213,7 +1212,7 @@ elif dashboard_selection == "📈 Trends Analysis":
             ))
 
         fig.update_layout(
-        title="Trend Line Chart",
+        title=f"Price Trend Chart of {ticker_symbol}",
         xaxis_title="Date",
         yaxis_title="Price ($)",
         hovermode="x unified",
@@ -1222,8 +1221,8 @@ elif dashboard_selection == "📈 Trends Analysis":
         annotations=annotations
         )
 
-        st.info(f"This longest Uptrend is from {streaks["longest_uptrend"]["start_date"].strftime("%b %d, %Y")} to {streaks["longest_uptrend"]["end_date"].strftime("%b %d, %Y")} and lasted for {streaks["longest_uptrend"]["length"]} days")
-        st.info(f"This longest Downtrend is from {streaks["longest_downtrend"]["start_date"].strftime("%b %d, %Y")} to {streaks["longest_downtrend"]["end_date"].strftime("%b %d, %Y")} and lasted for {streaks["longest_downtrend"]["length"]} days")
+        st.success(f"The longest Uptrend is from {streaks["longest_uptrend"]["start_date"].strftime("%b %d, %Y")} to {streaks["longest_uptrend"]["end_date"].strftime("%b %d, %Y")} and lasted for {streaks["longest_uptrend"]["length"]} days")
+        st.error(f"The longest Downtrend is from {streaks["longest_downtrend"]["start_date"].strftime("%b %d, %Y")} to {streaks["longest_downtrend"]["end_date"].strftime("%b %d, %Y")} and lasted for {streaks["longest_downtrend"]["length"]} days")
 
 
         return fig
