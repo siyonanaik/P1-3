@@ -1025,7 +1025,7 @@ elif dashboard_selection == "Trends Analysis":
             fillcolor="rgba(128,128,128,0.3)"
         ), row=1, col=1)
 
-
+        # Validation Plots
         fig.add_trace(go.Scatter(
             x=data.index,
             y=validation_bands[f"BBU_{window}_2.0_2.0"],
@@ -1094,6 +1094,7 @@ elif dashboard_selection == "Trends Analysis":
                 color = "grey"
                 up_streak = down_streak = 0
 
+            # Updates dict with streak counter and end date
             if up_streak > longest_up["length"]:
                 longest_up.update({"length": up_streak, "end_date": data.index[i]})
             if down_streak > longest_down["length"]:
