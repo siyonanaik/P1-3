@@ -5,7 +5,7 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime, timedelta
-import pandas_ta as ta
+# import pandas_ta as ta
 from calculations import *
 from apihandler import *
 from helper import *
@@ -16,6 +16,11 @@ import plotly.graph_objects as go
 # --- Display different dashboards based on selection For different Team Members---
 
 #------------------------------------START OF THAW ZIN PART-------------------------------------------
+
+# I am ThawZinHtun , a 1st year Applied Artificial Intelligence student at Singapore Institute of Technology
+# I tried my best to develop and implement in a way that resembles a real world project
+# I encouraged my team to use best practices such as modular code, error handling, comments, and documentation
+# I have added comments to explain each part of the code for better understanding
 
 # Session state to hold chat history
 # Initialize chat history if not present , hardcoded initial message from FinSight 
@@ -49,6 +54,7 @@ to analyze stock tickers and get AI-powered insights.
 st.sidebar.title("FinSight Dashboards")
 st.sidebar.markdown("Navigate between different analysis and AI tools:")
 
+# --- Dashboard Menu Selection ---
 dashboard_selection = st.sidebar.radio(
     "Choose view:",
     (
@@ -61,20 +67,20 @@ dashboard_selection = st.sidebar.radio(
     )
 )
 
-
 # --- Dashboard Content Change Based on Selection ---
 
 if dashboard_selection == "🖌️ RSI Visualization & Explanation":
     st.markdown("---")
+    st.subheader("Relative Strength Index (RSI) Visualization & Explanation")
     
-    # ticker_symbol = st.session_state.current_ticker 
+    # RSI Visualization & Explanation UI 
+    # why I put this in app.py instead of calculations.py
+    # because this part is more of UI part instead of calculation part
     ticker_symbol = st.text_input("Enter a stock ticker (e.g., AAPL, MSFT, GOOG)", ).upper()
 
     if ticker_symbol:
         try:
-            # # --- DATA RETRIEVAL ---
-            # full_stock_data = st.session_state.stock_data_cache[ticker_symbol]
-
+            # Time Range Selection
             TIME_RANGES = {
                 "1M": timedelta(days=30), 
                 "3M": timedelta(days=90), 
@@ -83,6 +89,7 @@ if dashboard_selection == "🖌️ RSI Visualization & Explanation":
                 "3Y": timedelta(days=365 * 3), 
             }
 
+            # Radio buttons for time range selection
             selected_range_label = st.radio(
                 "Select Time Range:",
                 options=list(TIME_RANGES.keys()),
@@ -96,9 +103,10 @@ if dashboard_selection == "🖌️ RSI Visualization & Explanation":
             range_delta = TIME_RANGES.get(selected_range_label, timedelta(days=365))
             start_date = end_date - range_delta
             
+            # Download data from yfinance
             with st.spinner(f"Fetching data for {ticker_symbol} over the last {selected_range_label}..."):
                 full_stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
-            
+            # If wrong/invalid ticker symbol entered, return error msg
             if full_stock_data.empty:
                 st.error(f"Could not find data for ticker: {ticker_symbol}. Please check the symbol and try again.")
             else:
@@ -117,6 +125,7 @@ if dashboard_selection == "🖌️ RSI Visualization & Explanation":
                     'Volume': full_stock_data['Volume'],
                 }
 
+                # Convert to DataFrame . thanks to the team for this preprocess function
                 df = pd.DataFrame(data)
                 df = preprocess(df)
 
@@ -124,8 +133,66 @@ if dashboard_selection == "🖌️ RSI Visualization & Explanation":
                 # --- TAB DEFINITION ---
                 tab1, tab2, tab3 = st.tabs(["📊 RSI Indicator", "🤖 FinSight AI Assistant", "📰 Stock News Feed"])
                 
+                # Just hardcoded explanation of RSI
+                # I could use LLM to generate it 
+                # I was able to do it using huggingface api
+                # But I want to save the free tier api call for the chat part 
+                # So I hardcoded it here
                 with tab1:
-                    st.header("What is the Relative Strength Index (RSI)?")
+                    fixed_rsi_period = 14  # Fixed RSI period
+
+                    # Calculate RSI on the filtered data using the fixed 14-day period
+                    # why it is common for 14 days
+                    df['RSI'] = calculate_rsi(df, periods=fixed_rsi_period)
+
+                    # Plot RSI 
+                    # I did alot of commenting here to explain each line for better understanding
+                    # When I first learned plotly it was very hard to understand
+                    # During my previous internship, I had to learn plotly by myself
+                    # I got grilled by my mentor when I couldn't explain details parameters 
+                    fig_rsi = px.line(
+                        df.dropna(),  # DataFrame to plot. dropna() removes any rows with NaN values to avoid plotting errors.
+                        x=df.dropna().index,  # x-axis values: using the DataFrame's index (usually datetime or period numbers)
+                        y='RSI',  # y-axis values: the 'RSI' column from the DataFrame
+                        title=f"RSI Trend (Period {fixed_rsi_period} Days) over Last {selected_range_label}",  
+                        # title of the chart. Includes the RSI calculation period and selected date range for context
+                        labels={'RSI': 'RSI Value'}  
+                        # labels parameter: maps DataFrame column names to more user-friendly axis labels
+                    )
+
+                    # Add a horizontal line at RSI=70, typically considered the "overbought" threshold
+                    fig_rsi.add_hline(
+                        y=70,  # y-value for the horizontal line
+                        line_dash="dash",  # dashed line style
+                        line_color="red",  # line color indicating warning/overbought condition
+                        annotation_text="Overbought"  # text label displayed on the line
+                    )
+
+                    # Add a horizontal line at RSI=30, typically considered the "oversold" threshold
+                    fig_rsi.add_hline(
+                        y=30,  # y-value for the horizontal line
+                        line_dash="dash",  # dashed line style
+                        line_color="green",  # line color indicating buy signal/oversold condition
+                        annotation_text="Oversold"  # text label displayed on the line
+                    )
+
+                    # Customize y-axis
+                    fig_rsi.update_yaxes(
+                        range=[0, 100],  # restrict y-axis from 0 to 100, standard for RSI
+                        title="RSI Value"  # label for y-axis
+                    )
+
+                    # Customize x-axis
+                    fig_rsi.update_xaxes(
+                        title="Periods"  # label for x-axis, usually dates or periods depending on your index
+                    )
+
+                    # Render the Plotly figure in Streamlit
+                    st.plotly_chart(
+                        fig_rsi, 
+                        use_container_width=True  # automatically adjusts chart width to the Streamlit container
+                    )
+                    st.subheader("What is the Relative Strength Index (RSI)?")
                     st.info(
                         """
                 The **Relative Strength Index (RSI)** is a **momentum oscillator** in technical analysis that measures the 
@@ -139,26 +206,6 @@ if dashboard_selection == "🖌️ RSI Visualization & Explanation":
                 """
                     )
 
-                    fixed_rsi_period = 14  # Fixed RSI period
-                    st.subheader(f"RSI for {ticker_symbol}")
-
-                    # Calculate RSI on the filtered data using the fixed 14-day period
-                    df['RSI'] = calculate_rsi(df, periods=fixed_rsi_period)
-
-                    # Plot RSI
-                    fig_rsi = px.line(
-                        df.dropna(),
-                        x=df.dropna().index,
-                        y='RSI',
-                        title=f"RSI Trend (Period {fixed_rsi_period} Days) over Last {selected_range_label}",
-                        labels={'RSI': 'RSI Value'}
-                    )
-                    fig_rsi.add_hline(y=70, line_dash="dash", line_color="red", annotation_text="Overbought")
-                    fig_rsi.add_hline(y=30, line_dash="dash", line_color="green", annotation_text="Oversold")
-                    fig_rsi.update_yaxes(range=[0, 100], title="RSI Value")
-                    fig_rsi.update_xaxes(title="Periods")
-                    
-                    st.plotly_chart(fig_rsi, use_container_width=True)
 
                     st.info(
                         """
@@ -241,12 +288,16 @@ if dashboard_selection == "🖌️ RSI Visualization & Explanation":
                         stock_news = fetch_latest_news(ticker_symbol, limit=8)
 
                     if stock_news:
+                        # Display news in a structured format
                         st.markdown("Click on a headline to open the full article.")
                         st.markdown("---")
+                        # Use a two-column layout for index and source
                         for i, news_item in enumerate(stock_news):
                             col_index, col_source = st.columns([0.1, 0.9])
                             col_index.markdown(f"**{i+1}.**")
                             col_source.markdown(f"*{news_item.get('Source', 'Unknown')}*")
+                            # Expandable section for the headline and link
+                            # Tried my best to sort of news latest first using lambda function in apihandler.py
                             with st.expander(f"**{news_item.get('Title','No title')}**"):
                                 st.markdown(f"Read full article: [**{news_item.get('URL','')}**]({news_item.get('URL','')})")
                             st.markdown("---")
@@ -258,53 +309,7 @@ if dashboard_selection == "🖌️ RSI Visualization & Explanation":
             st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data.")
             st.exception(e)
 
-elif dashboard_selection == "":
-    
-    st.markdown("---")
-    # --- FIN SIGHT CHAT ASSISTANT UI ---
-    st.header("FinSight 💬")
 
-    # 1. DISPLAY ALL MESSAGES FROM HISTORY
-    # This loop renders all messages from previous runs.
-    for message in st.session_state.chat_messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # 2. Handle new user input
-    if prompt := st.chat_input("Ask about any technical analysis...", key="ticker_input_chat"):
-        
-        # A. Append user message to history immediately
-        st.session_state.chat_messages.append({"role": "user", "content": prompt})
-        
-        # B. EXPLICITLY DISPLAY THE NEW USER MESSAGE in the current run
-        # This makes it appear instantly before the API call starts.
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        
-        # 3. Get response from LLM
-        with st.chat_message("assistant"):
-            with st.spinner("Assistant is thinking..."):
-                try:
-                    # Prepare the full conversation context for the LLM (Universalized prompt)
-                    full_prompt = "You are an expert in financial and technical analyst. Answer the user's question concisely. User: " + prompt
-                    
-                    # Blocking API call happens here
-                    llm_response = call_huggingface_api(full_prompt)
-                    
-                    # Display and append the response
-                    st.markdown(llm_response)
-                    st.session_state.chat_messages.append({"role": "assistant", "content": llm_response})
-                    
-                except Exception as e:
-                    error_message = "Sorry, I can't reach the technical analysis server right now. Please try again later."
-                    st.error(error_message)
-                    # Append the error message to the chat history
-                    st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-            
-            # The st.rerun() is no longer strictly necessary if the user message is displayed immediately,
-            # but we keep it to ensure the latest state (especially after an error) is clean.
-            st.rerun() 
-           
 #------------------------------------END OF THAW ZIN PART---------------------------------------------
             
             
@@ -1128,8 +1133,17 @@ elif dashboard_selection == "📈 Trends Analysis":
         annotations=annotations
         )
 
-        st.info(f"This longest Uptrend is from {streaks["longest_uptrend"]["start_date"].strftime("%b %d, %Y")} to {streaks["longest_uptrend"]["end_date"].strftime("%b %d, %Y")} and lasted for {streaks["longest_uptrend"]["length"]} days")
-        st.info(f"This longest Downtrend is from {streaks["longest_downtrend"]["start_date"].strftime("%b %d, %Y")} to {streaks["longest_downtrend"]["end_date"].strftime("%b %d, %Y")} and lasted for {streaks["longest_downtrend"]["length"]} days")
+        st.info(
+            f"This longest Uptrend is from {streaks['longest_uptrend']['start_date'].strftime('%b %d, %Y')} "
+            f"to {streaks['longest_uptrend']['end_date'].strftime('%b %d, %Y')} "
+            f"and lasted for {streaks['longest_uptrend']['length']} days"
+        )
+
+        st.info(
+            f"This longest Downtrend is from {streaks['longest_downtrend']['start_date'].strftime('%b %d, %Y')} "
+            f"to {streaks['longest_downtrend']['end_date'].strftime('%b %d, %Y')} "
+            f"and lasted for {streaks['longest_downtrend']['length']} days"
+        )
 
 
         return fig

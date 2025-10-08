@@ -14,7 +14,7 @@ import yfinance as yf
 
 #------------------------------------START OF THAWZIN PART-----------------------------------
 
-# Ensure this function replaces the one in your utility section
+# calculate rsi using j.welles wilder method
 def calculate_rsi(df: pd.DataFrame, periods: int = 14) -> pd.Series:
     """
     Calculates the Relative Strength Index (RSI) using J. Welles Wilder's method.
