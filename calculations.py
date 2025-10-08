@@ -323,7 +323,7 @@ def bollinger_bands(data: pd.DataFrame, window: int = 5, k: int = 2) -> pd.DataF
 
     # Sliding window calculation
     for i in range(window - 1, n):
-        window_data = prices[i - window + 1 : i + 1] # Getting first 20 elements
+        window_data = prices[i - window + 1 : i + 1] # Getting first window elements
         
         mean = sum(window_data) / window
         variance = sum((x-mean) ** 2 for x in window_data) / window

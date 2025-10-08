@@ -1138,11 +1138,11 @@ elif dashboard_selection == "📈 Trends Analysis":
         # Computing start dates for longest streak
         if longest_up["end_date"] is not None:
             end_idx = data.index.get_loc(longest_up["end_date"])
-            longest_up["start_date"] = data.index[end_idx - longest_up['length']]
+            longest_up["start_date"] = data.index[end_idx - longest_up['length'] + 1]
 
         if longest_down["end_date"] is not None:
             end_idx = data.index.get_loc(longest_down["end_date"])
-            longest_down["start_date"] = data.index[end_idx - longest_down['length']]
+            longest_down["start_date"] = data.index[end_idx - longest_down['length'] + 1]
 
         streaks = {
             "longest_uptrend": longest_up,
