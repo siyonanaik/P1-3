@@ -1244,13 +1244,13 @@ elif dashboard_selection == "📈 Trends Analysis":
         annotations=annotations
         )
 
-        st.info(
+        st.success(
             f"This longest Uptrend is from {streaks['longest_uptrend']['start_date'].strftime('%b %d, %Y')} "
             f"to {streaks['longest_uptrend']['end_date'].strftime('%b %d, %Y')} "
             f"and lasted for {streaks['longest_uptrend']['length']} days"
         )
 
-        st.info(
+        st.error(
             f"This longest Downtrend is from {streaks['longest_downtrend']['start_date'].strftime('%b %d, %Y')} "
             f"to {streaks['longest_downtrend']['end_date'].strftime('%b %d, %Y')} "
             f"and lasted for {streaks['longest_downtrend']['length']} days"
