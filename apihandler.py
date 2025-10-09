@@ -2,16 +2,12 @@
 # --- To pass the prompt to Hugging Face API and get the response ---
 # Note: Please feel free to use this function in your own part of the code 
 # Please do not modify this function unless approved by me (Thaw Zin)
-
 from huggingface_hub import InferenceClient 
-
 import streamlit as st 
-
 import os 
-
 from dotenv import load_dotenv 
 
-load_dotenv() 
+load_dotenv()  # Load environment variables from a .env file
 
 # News Fetching Libraries
 import feedparser
@@ -19,15 +15,10 @@ import urllib.parse
 
 
 # --- Load API Key from Environment Variable --- 
-
 try: 
-
     HUGGINGFACE_API_KEY = os.environ["HUGGINGFACE_API_KEY"] 
-
 except KeyError: 
-
     st.error("Error: HUGGINGFACE_API_KEY environment variable not found.") 
-
     st.stop()  # Stops the app from running further
 
 # please forgive me if appi call fail :3
@@ -36,6 +27,9 @@ except KeyError:
 def call_huggingface_api(prompt: str) -> str:
     """
     Handles the API call to Hugging Face for text generation.
+    
+    Uses the chat completion endpoint with streaming support for 
+    longer responses. Returns the generated text as a single string.
     """
     client = InferenceClient(api_key=HUGGINGFACE_API_KEY)
     try:
@@ -58,7 +52,7 @@ def call_huggingface_api(prompt: str) -> str:
             if chunk.get("choices"):
                 delta_content = chunk["choices"][0].get("delta", {}).get("content", "")
                 output += delta_content
-        return output.strip()
+        return output.strip()  # Remove any leading/trailing whitespace
     except Exception as e:
         print(f"Error during API call: {e}")
         return "Error occurred while generating the response."
@@ -81,6 +75,8 @@ def fetch_latest_news(query: str, limit: int = 8):
         # Uses a fallback tuple (0,...) if published_parsed is missing, making it robust
         sorted_entries = sorted(
             feed.entries, 
+            # Sort by published date, newest first
+            # using what covered in last python lecture by prof Zheng 
             key=lambda entry: entry.published_parsed or (0,0,0,0,0,0,0,0,0), 
             reverse=True
         )
@@ -93,10 +89,9 @@ def fetch_latest_news(query: str, limit: int = 8):
                 "Source": entry.source.title if hasattr(entry, 'source') and hasattr(entry.source, 'title') else 'Google News',
                 "URL": entry.link
             }
-            for entry in sorted_entries[:limit]
+            for entry in sorted_entries[:limit]  # Limit results to the requested number
         ]
     except Exception as e:
         # 5. Report any errors to the user via st.error
         st.error(f"Error fetching news: {e}")
-        return []
-
+        return []  # Return empty list on failure
