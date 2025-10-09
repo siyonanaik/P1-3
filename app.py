@@ -67,7 +67,6 @@ dashboard_selection = st.sidebar.radio(
     )
 )
 
-<<<<<<< HEAD
 if dashboard_selection == "👥 About Us":
     st.title("About Us - Meet the Team")
     st.markdown("Welcome to the About Us page! Here you will find information about the team behind FinSight.")
@@ -178,8 +177,6 @@ def get_full_stock_data(ticker, start_date, end_date):
     """
     return yf.download(ticker, start=start_date, end=end_date)
 
-=======
->>>>>>> feb25abffb386dde08258ade33c70d3a77501fb3
 # --- Dashboard Content Change Based on Selection ---
 
 if dashboard_selection == "🖌️ RSI Visualization & Explanation":
@@ -1247,10 +1244,6 @@ elif dashboard_selection == "📈 Trends Analysis":
         annotations=annotations
         )
 
-<<<<<<< HEAD
-        st.success(f"The longest Uptrend is from {streaks["longest_uptrend"]["start_date"].strftime("%b %d, %Y")} to {streaks["longest_uptrend"]["end_date"].strftime("%b %d, %Y")} and lasted for {streaks["longest_uptrend"]["length"]} days")
-        st.error(f"The longest Downtrend is from {streaks["longest_downtrend"]["start_date"].strftime("%b %d, %Y")} to {streaks["longest_downtrend"]["end_date"].strftime("%b %d, %Y")} and lasted for {streaks["longest_downtrend"]["length"]} days")
-=======
         st.info(
             f"This longest Uptrend is from {streaks['longest_uptrend']['start_date'].strftime('%b %d, %Y')} "
             f"to {streaks['longest_uptrend']['end_date'].strftime('%b %d, %Y')} "
@@ -1262,7 +1255,6 @@ elif dashboard_selection == "📈 Trends Analysis":
             f"to {streaks['longest_downtrend']['end_date'].strftime('%b %d, %Y')} "
             f"and lasted for {streaks['longest_downtrend']['length']} days"
         )
->>>>>>> feb25abffb386dde08258ade33c70d3a77501fb3
 
 
         return fig
