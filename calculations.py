@@ -340,6 +340,19 @@ def bollinger_bands(data: pd.DataFrame, window: int = 5, k: int = 2) -> pd.DataF
     }, index=data.index)
 
 def trend_streaks(data: pd.DataFrame):
+    '''
+    Computes Up, Down and Sideways trend
+    based on closing price
+
+    Parameters: 
+    data: pd.DataFrame containing stock closing price
+
+    Returns:
+    segment_colors: color of plot
+    longest_uptrend: length of streak, start and end date
+    longest_downtrend: length of streak, start and end date
+    
+    '''
     close = data["Close"].values
     up_streak = 0
     down_streak = 0
