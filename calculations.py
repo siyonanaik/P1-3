@@ -125,15 +125,15 @@ def exponential_moving_average(prices, period):
 
 
 #------------------------------------START OF KAI REI PART-----------------------------------
-def calculate_daily_returns(close):
+def calculate_daily_returns(close: list[float]) -> list[float]:
     """
     Calculate daily returns for each day.
     
     Parameters:
-    - close: list of close values
+    - close: list of float close values
     
     Returns:
-    - list of daily returns (%)
+    - list of float daily returns (%)
     """
 
     # Input validation
@@ -158,17 +158,17 @@ def calculate_daily_returns(close):
 
     return dailyreturn_lst
 
-def calculate_true_range(high, low, close):
+def calculate_true_range(high: list[float], low: list[float], close: list[float]) -> list[float]:
     """
     Calculate true range for each day. (needed to calculate average true range)
     
     Parameters:
-    - high: list of high values
-    - low: list of low values
-    - close: list of close values
+    - high: list of float high values
+    - low: list of float low values
+    - close: list of float close values
     
     Returns:
-    - list of true range values
+    - list of float true range values
     """
     # Input validation
     if not high or not low or not close:
@@ -224,15 +224,15 @@ def calculate_true_range(high, low, close):
     
     return tr_lst
 
-def calculate_average_true_range(tr_lst):
+def calculate_average_true_range(tr_lst: list[float]) -> list[float]:
     """
     Calculate average true range for each day.
     
     Parameters:
-    - tr_lst: list of true range values
+    - tr_lst: list of float true range values
     
     Returns:
-    - list of average true range values
+    - list of float average true range values
     """
     # Input validation
     if not tr_lst:

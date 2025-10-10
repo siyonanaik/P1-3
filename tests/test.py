@@ -5,6 +5,14 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from calculations import *
 
+r"""
+
+TO RUN:
+cd to ...\P1-3\tests
+run python test.py
+
+"""
+
 
 """Test cases for calculate_daily_returns function"""
 
