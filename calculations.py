@@ -313,31 +313,43 @@ def bollinger_bands(data: pd.DataFrame, window: int = 5, k: int = 2) -> pd.DataF
 
 
     '''
-    prices = np.asarray(data['Close'])
-    n = len(prices)
+    try:
 
-    # Creating empty array to hold results
-    sma = np.full(n, np.nan)
-    upper_band = np.full(n, np.nan)
-    lower_band = np.full(n, np.nan)
-
-    # Sliding window calculation
-    for i in range(window - 1, n):
-        window_data = prices[i - window + 1 : i + 1] # Getting first window elements
+        if "Close" not in data.columns:
+            raise KeyError("DataFrame must contain a 'Close' column.")
         
-        mean = sum(window_data) / window
-        variance = sum((x-mean) ** 2 for x in window_data) / window
-        std = variance ** 0.5
+        prices = np.asarray(data['Close'])
+        n = len(prices)
 
-        sma[i] = mean
-        upper_band[i] = mean + k * std
-        lower_band[i] = mean - k * std
+        # Creating empty array to hold results
+        sma = np.full(n, np.nan)
+        upper_band = np.full(n, np.nan)
+        lower_band = np.full(n, np.nan)
 
-    return pd.DataFrame({
-        'SMA': sma,
-        'UpperBand': upper_band,
-        'LowerBand': lower_band
-    }, index=data.index)
+        # Sliding window calculation
+        for i in range(window - 1, n):
+            window_data = prices[i - window + 1 : i + 1] # Getting first window elements
+            
+            mean = sum(window_data) / window
+            variance = sum((x-mean) ** 2 for x in window_data) / window
+            std = variance ** 0.5
+
+            sma[i] = mean
+            upper_band[i] = mean + k * std
+            lower_band[i] = mean - k * std
+
+        return pd.DataFrame({
+            'SMA': sma,
+            'UpperBand': upper_band,
+            'LowerBand': lower_band
+        }, index=data.index)
+    
+    except KeyError as e:
+        print(f"[Error] Missing Column: {e}")
+    except ValueError as e:
+        print(f"[Error] Invalid Input: {e}")
+    except Exception as e:
+        print(f"[Unexpected Error] {e}")
 
 def trend_streaks(data: pd.DataFrame) -> dict:
     '''
@@ -349,53 +361,66 @@ def trend_streaks(data: pd.DataFrame) -> dict:
 
     Returns:
     segment_colors: color of plot
-    longest_uptrend: length of streak, start and end date
-    longest_downtrend: length of streak, start and end date
+    longest_uptrend: {"length", "start_date", "end_date"}
+    longest_downtrend: {"length", "start_date", "end_date"}
     
     '''
-    close = data["Close"].values
-    up_streak = 0
-    down_streak = 0
-    longest_up = {"length": 0, "end_date": None}
-    longest_down = {"length": 0, "end_date": None}
-    segment_colors = []
+    try:
+        if 'Close' not in data.columns:
+            raise KeyError("DataFrame must contain a 'Close' column.")
+        if data.empty:
+            raise ValueError("Input dataframe is empty.")
 
-    for i in range(1, len(data)):
-        prev, current = close[i-1], close[i]
-        if current > prev: # Uptrend
-            color = "green"
-            up_streak += 1
-            down_streak = 0
-        elif current < prev: # Downtrend
-            color = "red"
-            down_streak += 1
-            up_streak = 0
-        else: # Flat
-            color = "grey"
-            up_streak = down_streak = 0
+        close = data["Close"].values
+        up_streak = 0
+        down_streak = 0
+        longest_up = {"length": 0, "end_date": None}
+        longest_down = {"length": 0, "end_date": None}
+        segment_colors = []
 
-        segment_colors.append(color)
+        for i in range(1, len(data)):
+            prev, current = close[i-1], close[i]
+            if current > prev: # Uptrend
+                color = "green"
+                up_streak += 1
+                down_streak = 0
+            elif current < prev: # Downtrend
+                color = "red"
+                down_streak += 1
+                up_streak = 0
+            else: # Flat
+                color = "grey"
+                up_streak = down_streak = 0
 
-        # Updates dict with streak counter and end date
-        if up_streak > longest_up["length"]:
-            longest_up.update({"length": up_streak, "end_date": data.index[i]})
-        if down_streak > longest_down["length"]:
-            longest_down.update({"length": down_streak, "end_date": data.index[i]})
+            segment_colors.append(color)
 
-    # Computing start dates for longest streak
-    if longest_up["end_date"] is not None:
-        end_idx = data.index.get_loc(longest_up["end_date"])
-        longest_up["start_date"] = data.index[end_idx - longest_up['length'] + 1]
+            # Updates dict with streak counter and end date
+            if up_streak > longest_up["length"]:
+                longest_up.update({"length": up_streak, "end_date": data.index[i]})
+            if down_streak > longest_down["length"]:
+                longest_down.update({"length": down_streak, "end_date": data.index[i]})
 
-    if longest_down["end_date"] is not None:
-        end_idx = data.index.get_loc(longest_down["end_date"])
-        longest_down["start_date"] = data.index[end_idx - longest_down['length'] + 1]
+        # Computing start dates for longest streak
+        if longest_up["end_date"] is not None:
+            end_idx = data.index.get_loc(longest_up["end_date"])
+            longest_up["start_date"] = data.index[end_idx - longest_up['length'] + 1]
 
-    return {
-        "segment_colors": segment_colors,
-        "longest_uptrend": longest_up,
-        "longest_downtrend": longest_down
-    }
+        if longest_down["end_date"] is not None:
+            end_idx = data.index.get_loc(longest_down["end_date"])
+            longest_down["start_date"] = data.index[end_idx - longest_down['length'] + 1]
+
+        return {
+            "segment_colors": segment_colors,
+            "longest_uptrend": longest_up,
+            "longest_downtrend": longest_down
+        }
+    
+    except KeyError as e:
+        print(f"[Error] Missing Column: {e}")
+    except (ValueError, TypeError) as e:
+        print(f"[Error] Invalid Input: {e}")
+    except Exception as e:
+        print(f"[Unexpected Error] {e}")
 
 #------------------------------------END OF YUAN WEI PART------------------------------------
 
