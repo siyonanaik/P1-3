@@ -339,7 +339,7 @@ def bollinger_bands(data: pd.DataFrame, window: int = 5, k: int = 2) -> pd.DataF
         'LowerBand': lower_band
     }, index=data.index)
 
-def trend_streaks(data: pd.DataFrame):
+def trend_streaks(data: pd.DataFrame) -> dict:
     '''
     Computes Up, Down and Sideways trend
     based on closing price
