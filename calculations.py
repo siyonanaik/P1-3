@@ -339,6 +339,51 @@ def bollinger_bands(data: pd.DataFrame, window: int = 5, k: int = 2) -> pd.DataF
         'LowerBand': lower_band
     }, index=data.index)
 
+def trend_streaks(data: pd.DataFrame):
+    close = data["Close"].values
+    up_streak = 0
+    down_streak = 0
+    longest_up = {"length": 0, "end_date": None}
+    longest_down = {"length": 0, "end_date": None}
+    segment_colors = []
+
+    for i in range(1, len(data)):
+        prev, current = close[i-1], close[i]
+        if current > prev: # Uptrend
+            color = "green"
+            up_streak += 1
+            down_streak = 0
+        elif current < prev: # Downtrend
+            color = "red"
+            down_streak += 1
+            up_streak = 0
+        else: # Flat
+            color = "grey"
+            up_streak = down_streak = 0
+
+        segment_colors.append(color)
+
+        # Updates dict with streak counter and end date
+        if up_streak > longest_up["length"]:
+            longest_up.update({"length": up_streak, "end_date": data.index[i]})
+        if down_streak > longest_down["length"]:
+            longest_down.update({"length": down_streak, "end_date": data.index[i]})
+
+    # Computing start dates for longest streak
+    if longest_up["end_date"] is not None:
+        end_idx = data.index.get_loc(longest_up["end_date"])
+        longest_up["start_date"] = data.index[end_idx - longest_up['length'] + 1]
+
+    if longest_down["end_date"] is not None:
+        end_idx = data.index.get_loc(longest_down["end_date"])
+        longest_down["start_date"] = data.index[end_idx - longest_down['length'] + 1]
+
+    return {
+        "segment_colors": segment_colors,
+        "longest_uptrend": longest_up,
+        "longest_downtrend": longest_down
+    }
+
 #------------------------------------END OF YUAN WEI PART------------------------------------
 
 

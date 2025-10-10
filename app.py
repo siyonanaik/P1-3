@@ -1122,77 +1122,31 @@ elif dashboard_selection == "📈 Trends Analysis":
         Returns:
         fig: Plotly.graph_objects Figure object
         '''
-        close = data["Close"].values
-        up_streak = 0
-        down_streak = 0
-        longest_up = {"length": 0, "end_date": None}
-        longest_down = {"length": 0, "end_date": None}
+        results = trend_streaks(data)
+        color = results["segment_colors"]
+        longest_up = results["longest_uptrend"]
+        longest_down = results["longest_downtrend"]
 
+        # Add each small segment as its own trace
         for i in range(1, len(data)):
-            prev, current = close[i-1], close[i]
-            if current > prev: # Uptrend
-                color = "green"
-                up_streak += 1
-                down_streak = 0
-            elif current < prev: # Downtrend
-                color = "red"
-                down_streak += 1
-                up_streak = 0
-            else: # Flat
-                color = "grey"
-                up_streak = down_streak = 0
-
-            # Updates dict with streak counter and end date
-            if up_streak > longest_up["length"]:
-                longest_up.update({"length": up_streak, "end_date": data.index[i]})
-            if down_streak > longest_down["length"]:
-                longest_down.update({"length": down_streak, "end_date": data.index[i]})
-
-            # Add each small segment as its own trace
             fig.add_trace(go.Scatter(
                 x=data.index[i-1:i+1],
                 y=data["Close"].iloc[i-1:i+1],
                 mode="lines",
-                line=dict(color=color, width=1.8),
+                line=dict(color=color[i-1], width=1.8),
                 hoverinfo='skip',
                 showlegend=False   # hide legend spam
             ))
 
-        # Computing start dates for longest streak
-        if longest_up["end_date"] is not None:
-            end_idx = data.index.get_loc(longest_up["end_date"])
-            longest_up["start_date"] = data.index[end_idx - longest_up['length'] + 1]
-
-        if longest_down["end_date"] is not None:
-            end_idx = data.index.get_loc(longest_down["end_date"])
-            longest_down["start_date"] = data.index[end_idx - longest_down['length'] + 1]
-
-        streaks = {
-            "longest_uptrend": longest_up,
-            "longest_downtrend": longest_down
-        }
         
-        # Dummy data to show legend
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None],
-            mode="lines",
-            line=dict(color="green", width=2),
-            name="Uptrend"
-        ))
-
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None],
-            mode="lines",
-            line=dict(color="red", width=2),
-            name="Downtrend"
-        ))
-
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None],
-            mode="lines",
-            line=dict(color="grey", width=2),
-            name="Flat"
-        ))
+        for color, name in [("green", "Uptrend"), ("red", "Downtrend"), ("grey", "Flat")]:
+            # Dummy data to show legend
+            fig.add_trace(go.Scatter(
+                x=[None], y=[None],
+                mode="lines",
+                line=dict(color=color, width=2),
+                name=name
+            ))
 
 
         shapes = []
@@ -1210,7 +1164,7 @@ elif dashboard_selection == "📈 Trends Analysis":
             ))
             annotations.append(dict(
                 x=longest_up["end_date"],
-                y=max(close),
+                y=max(data["Close"]),
                 text=f"Longest Uptrend ({longest_up['length']} days)",
                 showarrow=False,
                 font=dict(color="green", size=12)
@@ -1228,7 +1182,7 @@ elif dashboard_selection == "📈 Trends Analysis":
             ))
             annotations.append(dict(
                 x=longest_down["end_date"],
-                y=min(close),
+                y=min(data["Close"]),
                 text=f"Longest Downtrend ({longest_down['length']} days)",
                 showarrow=False,
                 font=dict(color="red", size=12)
@@ -1245,15 +1199,15 @@ elif dashboard_selection == "📈 Trends Analysis":
         )
 
         st.success(
-            f"This longest Uptrend is from {streaks['longest_uptrend']['start_date'].strftime('%b %d, %Y')} "
-            f"to {streaks['longest_uptrend']['end_date'].strftime('%b %d, %Y')} "
-            f"and lasted for {streaks['longest_uptrend']['length']} days"
+            f"This longest Uptrend is from {longest_up['start_date'].strftime('%b %d, %Y')} "
+            f"to {longest_up['end_date'].strftime('%b %d, %Y')} "
+            f"and lasted for {longest_up['length']} days"
         )
 
         st.error(
-            f"This longest Downtrend is from {streaks['longest_downtrend']['start_date'].strftime('%b %d, %Y')} "
-            f"to {streaks['longest_downtrend']['end_date'].strftime('%b %d, %Y')} "
-            f"and lasted for {streaks['longest_downtrend']['length']} days"
+            f"This longest Downtrend is from {longest_down['start_date'].strftime('%b %d, %Y')} "
+            f"to {longest_down['end_date'].strftime('%b %d, %Y')} "
+            f"and lasted for {longest_down['length']} days"
         )
 
 
