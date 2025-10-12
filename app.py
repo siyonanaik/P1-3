@@ -5,7 +5,7 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime, timedelta
-import pandas_ta as ta
+# import pandas_ta as ta
 from calculations import *
 from apihandler import *
 from helper import *
@@ -60,117 +60,6 @@ dashboard_selection = st.sidebar.radio(
         "💰 Max Profit Calculation",
     )
 )
-
-
-if dashboard_selection == "👥 About Us":
-    st.title("About Us - Meet the Team")
-    st.markdown("Welcome to the About Us page! Here you will find information about the team behind FinSight.")
-
-    # --- Team Members Section ---
-    team_members = [
-        {
-            "name": "THAW ZIN HTUN",
-            "hobbies": "AI/ML, Badminton, Chess",
-            "tasks": [
-                "Github Repo Setup",
-                "Github Streamlit Setup",
-                "Streamlit Frontend UI Setup",
-                "Streamlit Menu for team members",
-                "Candlestick Charts (price movements) - Top Plot for OHLC, Bottom Plot for Volume",
-                "RSI Calculation & Visualization",
-                "RSI Explanation",
-                "Latest News Fetching (latest 8 news) - Google News RSS",
-                "GenAI powered 'FinSight AI Assistant' (HuggingFace - free tier inference API)",
-                "About Us Page"
-            ],
-            "linkedIn": "https://www.linkedin.com/in/thawzin-htun/",
-            "github": "https://github.com/thawzin07"
-        },
-        # For yours own profile, please replace the placeholder details below with your actual information
-        # and keep the same structure for consistency
-        
-        {
-            "name": "Siyona Naik",
-            "hobbies": "Dance, Music, Chess",
-            "tasks": [
-                "Simple Moving Average (SMA)",
-                "Visualisation: Plotting daily closing price vs. SMA on chart",
-                "Exponential Moving Average (EMA)",
-                "Visualisation: Plotting daily closing price vs. EMA on chart",
-                "Validation for SMA and EMA",
-                "Report Writing"
-            ],
-            "linkedIn": "https://www.linkedin.com/in/siyona-naik-026b9234a?lipi=urn%3Ali%3Apage%3Ad_flagship3_profile_view_base_contact_details%3BX0%2Ff3UI%2FSwCteliPNS4oOw%3D%3D",
-            "github": "https://github.com/siyonanaik"
-        },
-        {
-            "name": "Wynn Placeholder",
-            "hobbies": "Alpha, Beta, Gamma",
-            "tasks": [
-                "Ut enim ad minim veniam",
-                "Quis nostrud exercitation ullamco",
-                "Laboris nisi ut aliquip ex ea",
-                "Commodo consequat duis aute",
-                "Irure dolor in reprehenderit"
-            ],
-            "linkedIn": "https://www.linkedin.com/in/placeholder2/",
-            "github": "https://github.com/placeholder2"
-        },
-        {
-            "name": "Toh Yuan Wei",
-            "hobbies": "AI, Reading, Programming",
-            "tasks": [
-                "Calculation of Uptrend and Downtrend",
-                "Visualisation: Plotting Trends over close price",
-                "Bollinger Bands",
-                "Visualisation: Plotting bollinger bands on close price"
-            ],
-            "linkedIn": "https://www.linkedin.com/in/toh-yuanwei-55b7461aa/",
-            "github": "https://github.com/TYW02"
-        },
-        {
-            "name": "Kai Rei Placeholder",
-            "hobbies": "Running, Swimming, Cycling",
-            "tasks": [
-                "Lorem ipsum dolor sit amet",
-                "Consectetur adipiscing elit",
-                "Sed do eiusmod tempor incididunt",
-                "Ut labore et dolore magna aliqua",
-                "Ut enim ad minim veniam"
-            ],
-            "linkedIn": "https://www.linkedin.com/in/placeholder4/",
-            "github": "https://github.com/placeholder4"
-        }
-    ]
-
-    # --- Display team members ---
-    for member in team_members:
-        st.markdown("---")
-        st.subheader(member["name"])
-        st.markdown(f"**Hobbies:** {member['hobbies']}")
-
-        # Numbered tasks
-        numbered_tasks = "\n".join([f"{i}. {task}" for i, task in enumerate(member["tasks"], start=1)])
-        st.markdown(f"**Tasks / Responsibilities:**\n{numbered_tasks}")
-        
-        # LinkedIn & GitHub links
-        if member.get("linkedIn"):
-            st.markdown(f"**🔗 LinkedIn:** {member['linkedIn']}")
-        if member.get("github"):
-            st.markdown(f"**🐙 Github:** {member['github']}")
-
-
-# --- Function to fetch latest news for a given stock ticker --- 
-# Any member is welcome to use this function in their section if they want to do 'persistent' dashboard , let me know
-# I spent quite some time to make it work, so if you use without my knowledge, I will be sad :<
-@st.cache_data(ttl=3600) # Cache for 1 hour
-def get_full_stock_data(ticker, start_date, end_date):
-    """
-    Fetches historical stock data using yfinance and caches the result.
-    This prevents re-downloading data when the app reruns (e.g., due to dashboard
-    selection changes or widget interactions), making the application feel much faster.
-    """
-    return yf.download(ticker, start=start_date, end=end_date)
 
 # --- Dashboard Content Change Based on Selection ---
 
@@ -235,19 +124,7 @@ if dashboard_selection == "🖌️ RSI Visualization & Explanation":
                 tab1, tab2, tab3 = st.tabs(["📊 RSI Indicator", "🤖 FinSight AI Assistant", "📰 Stock News Feed"])
                 
                 with tab1:
-                    st.header("What is the Relative Strength Index (RSI)?")
-                    st.info(
-                        """
-                The **Relative Strength Index (RSI)** is a **momentum oscillator** in technical analysis that measures the 
-                **speed and magnitude of price movements** of a financial instrument.
-
-                **Key Points:**
-                - **Range:** RSI values range from **0 to 100**.
-                - **Overbought:** RSI above **70** may indicate an asset is overbought, potentially leading to a **price pullback**.
-                - **Oversold:** RSI below **30** may indicate an asset is oversold, potentially leading to a **price rebound**.
-                - **Typical Period:** RSI is commonly calculated over **14 periods** (e.g., 14 days for daily charts).
-                """
-                    )
+                    
 
                     fixed_rsi_period = 14  # Fixed RSI period
                     st.subheader(f"RSI for {ticker_symbol}")
@@ -270,6 +147,19 @@ if dashboard_selection == "🖌️ RSI Visualization & Explanation":
                     
                     st.plotly_chart(fig_rsi, use_container_width=True)
 
+                    st.header("What is the Relative Strength Index (RSI)?")
+                    st.info(
+                        """
+                The **Relative Strength Index (RSI)** is a **momentum oscillator** in technical analysis that measures the 
+                **speed and magnitude of price movements** of a financial instrument.
+
+                **Key Points:**
+                - **Range:** RSI values range from **0 to 100**.
+                - **Overbought:** RSI above **70** may indicate an asset is overbought, potentially leading to a **price pullback**.
+                - **Oversold:** RSI below **30** may indicate an asset is oversold, potentially leading to a **price rebound**.
+                - **Typical Period:** RSI is commonly calculated over **14 periods** (e.g., 14 days for daily charts).
+                """
+                    )
                     st.info(
                         """
                 **How RSI is Calculated (Simplified):**

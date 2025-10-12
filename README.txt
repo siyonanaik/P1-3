@@ -1,3 +1,11 @@
+Developed by Team P1-3 
+
+Thaw Zin Htun
+Toh Yuan Wei
+Yap Kai Rei
+Yap Yi Hui Wynn
+Siyona Shailesh Naik
+
 Financial Trend Analysis Dashboard
 This dashboard is a collaborative project for analyzing live financial data, including stock prices, RSI, and other key indicators.
 
