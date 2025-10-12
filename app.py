@@ -257,53 +257,6 @@ if dashboard_selection == "🖌️ RSI Visualization & Explanation":
             # Show the exception trace in the app for debugging
             st.error(f"An error occurred: {e}. The ticker may be invalid or there was an issue fetching data.")
             st.exception(e)
-
-elif dashboard_selection == "":
-    
-    st.markdown("---")
-    # --- FIN SIGHT CHAT ASSISTANT UI ---
-    st.header("FinSight 💬")
-
-    # 1. DISPLAY ALL MESSAGES FROM HISTORY
-    # This loop renders all messages from previous runs.
-    for message in st.session_state.chat_messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # 2. Handle new user input
-    if prompt := st.chat_input("Ask about any technical analysis...", key="ticker_input_chat"):
-        
-        # A. Append user message to history immediately
-        st.session_state.chat_messages.append({"role": "user", "content": prompt})
-        
-        # B. EXPLICITLY DISPLAY THE NEW USER MESSAGE in the current run
-        # This makes it appear instantly before the API call starts.
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        
-        # 3. Get response from LLM
-        with st.chat_message("assistant"):
-            with st.spinner("Assistant is thinking..."):
-                try:
-                    # Prepare the full conversation context for the LLM (Universalized prompt)
-                    full_prompt = "You are an expert in financial and technical analyst. Answer the user's question concisely. User: " + prompt
-                    
-                    # Blocking API call happens here
-                    llm_response = call_huggingface_api(full_prompt)
-                    
-                    # Display and append the response
-                    st.markdown(llm_response)
-                    st.session_state.chat_messages.append({"role": "assistant", "content": llm_response})
-                    
-                except Exception as e:
-                    error_message = "Sorry, I can't reach the technical analysis server right now. Please try again later."
-                    st.error(error_message)
-                    # Append the error message to the chat history
-                    st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-            
-            # The st.rerun() is no longer strictly necessary if the user message is displayed immediately,
-            # but we keep it to ensure the latest state (especially after an error) is clean.
-            st.rerun() 
            
 #------------------------------------END OF THAW ZIN PART---------------------------------------------
             
