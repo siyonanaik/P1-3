@@ -5,7 +5,7 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime, timedelta
-# import pandas_ta as ta
+import pandas_ta as ta
 from calculations import *
 from apihandler import *
 from helper import *
