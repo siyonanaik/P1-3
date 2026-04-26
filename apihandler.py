@@ -1,8 +1,8 @@
 # --- Author : THAW ZIN HTUN ---
-# --- To pass the prompt to Hugging Face API and get the response ---
+# --- To pass the prompt to OpenAI API and get the response ---
 # Note: Please feel free to use this function in your own part of the code 
 # Please do not modify this function unless approved by me (Thaw Zin)
-from huggingface_hub import InferenceClient 
+from openai import OpenAI
 import streamlit as st 
 import os 
 from dotenv import load_dotenv 
@@ -14,48 +14,42 @@ import feedparser
 import urllib.parse
 
 
-# --- Load API Key from Environment Variable --- 
+# --- Load API Key and model from Environment Variable ---
 try: 
-    HUGGINGFACE_API_KEY = os.environ["HUGGINGFACE_API_KEY"] 
+    OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 except KeyError: 
-    st.error("Error: HUGGINGFACE_API_KEY environment variable not found.") 
+    st.error("Error: OPENAI_API_KEY environment variable not found.") 
     st.stop()  # Stops the app from running further
 
-# please forgive me if appi call fail :3
-# I no money , only student :< 
-# used free tier huggingface inference api call 
-def call_huggingface_api(prompt: str) -> str:
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+
+def call_openai_api(prompt: str) -> str:
     """
-    Handles the API call to Hugging Face for text generation.
-    
-    Uses the chat completion endpoint with streaming support for 
-    longer responses. Returns the generated text as a single string.
+    Handles the API call to OpenAI for text generation.
     """
-    client = InferenceClient(api_key=HUGGINGFACE_API_KEY)
+    client = OpenAI(api_key=OPENAI_API_KEY)
     try:
-        output = ""
-        stream = client.chat.completions.create(
-            # Using a working model instead of the placeholder
-            # We can change the model later if needed
-            # But Model Access need to be first checked 
-            model="mistralai/Mistral-7B-Instruct-v0.2", 
-            messages=[{"role": "user", "content": prompt}], # Using chat completion format
-            temperature=0.5, # Adjusted for balanced creativity
-            max_tokens=2048, # Increased to allow for longer responses
-            top_p=0.9, # Adjusted for diversity
-            stream=True # Enable streaming
+        response = client.responses.create(
+            model=OPENAI_MODEL,
+            input=[
+                {
+                    "role": "system",
+                    "content": "You are an expert financial and technical analyst. Answer clearly and concisely.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            max_output_tokens=2048,
         )
-        # Stream and concatenate the response
-        # This allows for handling large responses without timeouts
-        # We assume the response is in chunks with 'choices' and 'delta' keys
-        for chunk in stream:
-            if chunk.get("choices"):
-                delta_content = chunk["choices"][0].get("delta", {}).get("content", "")
-                output += delta_content
-        return output.strip()  # Remove any leading/trailing whitespace
+        return response.output_text.strip()
     except Exception as e:
         print(f"Error during API call: {e}")
         return "Error occurred while generating the response."
+
+
+def call_huggingface_api(prompt: str) -> str:
+    """Backward-compatible wrapper for older app code."""
+    return call_openai_api(prompt)
     
 @st.cache_data(ttl=600) # Cache news for 10 minutes
 def fetch_latest_news(query: str, limit: int = 8):

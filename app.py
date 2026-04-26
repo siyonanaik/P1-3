@@ -210,17 +210,14 @@ if dashboard_selection == "🖌️ RSI Visualization & Explanation":
                                     full_prompt = "You are an expert in financial and technical analyst. Answer the user's question concisely. User: " + prompt
                                     
                                     # Blocking API call happens here
-                                    llm_response = call_huggingface_api(full_prompt)
+                                    llm_response = call_openai_api(full_prompt)
                                     
                                     # Check Display and append the response
-                                    # Why I hardcode here , cause whenever free tier huggingface api limit reached, it returns that hardcodeded message
-                                    # That error message is not user friendly, so I replace it with my own message
-                                    # Why it is not exception , because the api call itself is successful, just the response is not what we want
+                                    # Replace raw API failure text with a user-friendly message.
                                     if llm_response.startswith("Error occurred while generating the response."):
-                                        llm_response = """The language Model Implemented is called from HuggingFace Inference API.
-                                        The free tier has rate limits and usage limits. If you see this message, 
-                                        it likely means the limit has been reached. Sorry for the inconvenience. 
-                                        Please try again later. I even tried to do local LLM hosting but my laptop is not powerful enough :<"""
+                                        llm_response = """The AI assistant is powered by the OpenAI API.
+                                        I could not generate a response right now. Please check your OpenAI API key,
+                                        selected model, network connection, or usage limits, then try again."""
                                     st.markdown(llm_response)
                                     st.session_state.chat_messages.append({"role": "assistant", "content": llm_response})
                                     

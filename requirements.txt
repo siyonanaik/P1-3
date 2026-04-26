@@ -3,11 +3,11 @@ pandas
 yfinance
 plotly
 numpy
-huggingface_hub
+openai
 python-dotenv
 matplotlib
 mpld3
 feedparser
-pandas_ta
+# pandas_ta compatibility is provided by local pandas_ta.py
 #os
 #>>>>>>> 8a35a7d (adding max profit)
