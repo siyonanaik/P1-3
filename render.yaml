@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: finsight-dashboard
+    runtime: python
+    repo: https://github.com/thawzin07/SIT_Tri1_ProgramFund_Python.git
+    branch: thawzin
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        sync: false
